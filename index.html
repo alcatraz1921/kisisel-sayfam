@@ -1017,26 +1017,34 @@ function Funds({ funds, setFunds, lastTick }) {
 }
 
 // ----------- Vadeli + Claude column -----------
+const gunFarki = (tarih) => {
+  if (!tarih) return 0;
+  const bugun = new Date(); bugun.setHours(0,0,0,0);
+  const vade  = new Date(tarih);
+  return Math.max(0, Math.ceil((vade - bugun) / 86400000));
+};
+
 function Vadeli({ vadeli, setVadeli }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    tutar: String(vadeli.tutar),
-    faiz:  String(vadeli.faiz),
-    gun:   String(vadeli.gun),
-    kalan: String(vadeli.kalan),
+    tutar:       String(vadeli.tutar),
+    faiz:        String(vadeli.faiz),
+    gun:         String(vadeli.gun),
+    vade_tarihi: vadeli.vade_tarihi || "",
   });
 
   const kaydet = async () => {
     const t = parseFloat(form.tutar.replace(",",".")), f = parseFloat(form.faiz.replace(",","."));
-    const g = parseInt(form.gun), k = parseInt(form.kalan);
-    if (!t || !f || !g || isNaN(k)) return;
-    const newVadeli = { tutar:t, faiz:f, gun:g, kalan:k };
+    const g = parseInt(form.gun);
+    if (!t || !f || !g || !form.vade_tarihi) return;
+    const newVadeli = { tutar:t, faiz:f, gun:g, vade_tarihi:form.vade_tarihi };
     await db.from('settings').upsert({ key:'vadeli', value: newVadeli });
     setVadeli(newVadeli);
     setEditing(false);
   };
 
-  const pct    = Math.round(((vadeli.gun - vadeli.kalan) / vadeli.gun) * 100);
+  const kalan  = gunFarki(vadeli.vade_tarihi);
+  const pct    = vadeli.gun > 0 ? Math.round(((vadeli.gun - kalan) / vadeli.gun) * 100) : 0;
   const kazanc = Math.round(vadeli.tutar * (vadeli.faiz/100) * (vadeli.gun/365));
 
   return (
@@ -1044,7 +1052,7 @@ function Vadeli({ vadeli, setVadeli }) {
       <div className="head">
         <span className="mono">09 // Vadeli Mevduat</span>
         <span style={{display:"flex", gap:6, alignItems:"center"}}>
-          <span className="mono">{vadeli.kalan} gün kaldı</span>
+          <span className="mono">{kalan} gün kaldı</span>
           <button style={editBtn} onClick={() => {
             setForm({ tutar:String(vadeli.tutar), faiz:String(vadeli.faiz), gun:String(vadeli.gun), kalan:String(vadeli.kalan) });
             editing ? kaydet() : setEditing(true);
@@ -1069,8 +1077,8 @@ function Vadeli({ vadeli, setVadeli }) {
               <input style={miniInput} value={form.gun} onChange={e=>setForm({...form, gun:e.target.value})} placeholder="92" />
             </div>
             <div>
-              <div className="mono" style={{fontSize:9, marginBottom:3}}>Kalan Gün</div>
-              <input style={miniInput} value={form.kalan} onChange={e=>setForm({...form, kalan:e.target.value})} onKeyDown={e=>e.key==="Enter"&&kaydet()} placeholder="33" />
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Vade Tarihi</div>
+              <input type="date" style={miniInput} value={form.vade_tarihi} onChange={e=>setForm({...form, vade_tarihi:e.target.value})} onKeyDown={e=>e.key==="Enter"&&kaydet()} />
             </div>
           </div>
         </div>
@@ -1185,7 +1193,7 @@ function App() {
   const [funds, setFunds]     = useState(INITIAL_FUNDS);
   const [tick, setTick]       = useState("15:18:02");
   const [borclar, setBorclar] = useState(BORCLAR_INIT);
-  const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, kalan:0 });
+  const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, vade_tarihi:"" });
 
   // load persisted data on mount
   useEffect(() => {
@@ -1194,7 +1202,16 @@ function App() {
       if (data) setFunds(data.map(f => ({ ...f, price: f.base_price, base: f.base_price })));
     });
     db.from('settings').select('value').eq('key','vadeli').single().then(({data}) => {
-      if (data?.value) setVadeli(data.value);
+      if (data?.value) {
+        const v = data.value;
+        // eski format kalan → yeni format vade_tarihi geçiş
+        if (v.kalan !== undefined && !v.vade_tarihi) {
+          const d = new Date(); d.setDate(d.getDate() + v.kalan);
+          v.vade_tarihi = d.toISOString().slice(0,10);
+          delete v.kalan;
+        }
+        setVadeli(v);
+      }
     });
   }, []);
 
@@ -1220,7 +1237,7 @@ function App() {
     return { net: assets - debt, assets, debt, fonChange: fonNow - fonBase };
   }, [funds, borclar, vadeli]);
 
-  const context = `Toplam varlık ₺${TL(totals.assets)}. Toplam borç ₺${TL(totals.debt)}. Net varlık ₺${TL(totals.net)}. Vadeli mevduat ₺${TL(vadeli.tutar)} (%${vadeli.faiz} yıllık faiz, ${vadeli.kalan} gün kaldı). Fon portföyü ₺${TL(Math.round(funds.reduce((a,f)=>a+f.price*f.adet,0)))}. ${PROJELER_INIT.length} aktif proje.`;
+  const context = `Toplam varlık ₺${TL(totals.assets)}. Toplam borç ₺${TL(totals.debt)}. Net varlık ₺${TL(totals.net)}. Vadeli mevduat ₺${TL(vadeli.tutar)} (%${vadeli.faiz} yıllık faiz, ${gunFarki(vadeli.vade_tarihi)} gün kaldı). Fon portföyü ₺${TL(Math.round(funds.reduce((a,f)=>a+f.price*f.adet,0)))}. ${PROJELER_INIT.length} aktif proje.`;
 
   return (
     <>
