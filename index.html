@@ -1215,19 +1215,34 @@ function App() {
     });
   }, []);
 
-  // simulate live fund price ticks
+  // clock tick
   useEffect(() => {
     const t = setInterval(() => {
-      setFunds(prev => prev.map(f => {
-        const drift = (Math.random() - 0.5) * 0.004;
-        const newPrice = Math.max(0.0001, f.price * (1 + drift));
-        return { ...f, price: newPrice };
-      }));
       const d = new Date();
       setTick(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`);
-    }, 2500);
+    }, 1000);
     return () => clearInterval(t);
   }, []);
+
+  // TEFAS real fund prices — fetch on mount and every 5 min
+  useEffect(() => {
+    if (funds.length === 0) return;
+    const codes = funds.map(f => f.code).join(',');
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch(`/api/fon?codes=${codes}`);
+        const prices = await res.json();
+        setFunds(prev => prev.map(f =>
+          prices[f.code] ? { ...f, price: prices[f.code] } : f
+        ));
+        const d = new Date();
+        setTick(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`);
+      } catch (_) {}
+    };
+    fetchPrices();
+    const t = setInterval(fetchPrices, 5 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [funds.length]);
 
   const totals = useMemo(() => {
     const fonNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
