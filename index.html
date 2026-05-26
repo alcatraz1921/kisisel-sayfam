@@ -1098,9 +1098,13 @@ function Vadeli({ vadeli, setVadeli }) {
 }
 
 // ----------- Claude AI Chat -----------
+const sanitize = (text) =>
+  text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/&lt;em&gt;/g,"<em>").replace(/&lt;\/em&gt;/g,"</em>");
+
 function ClaudeChat({ context }) {
   const [msgs, setMsgs] = useState([
-    { role: "assistant", text: "Merhaba Atakan. Bugün <em>nasıl yardımcı</em> olabilirim? Finansal durumun, projelerin ya da görevlerin hakkında soru sorabilirsin." }
+    { role: "assistant", text: "Merhaba Atakan. Bugün nasıl yardımcı olabilirim? Finansal durumun, projelerin ya da görevlerin hakkında soru sorabilirsin." }
   ]);
   const [txt, setTxt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1115,13 +1119,14 @@ function ClaudeChat({ context }) {
     setMsgs(m => [...m, { role: "user", text: q }]);
     setBusy(true);
     try {
-      const sys = `Sen Atakan'ın kişisel dashboard'unda çalışan bir AI asistanısın. Türkçe cevap ver. Kısa, net ve dostça konuş — 2-3 cümleyi geçme. Vurgulamak istediğin tek bir kelime varsa <em>kelime</em> olarak işaretle. Atakan'ın güncel durumu: ${context}`;
-      const reply = await window.claude.complete({
-        messages: [
-          { role: "user", content: sys + "\n\nSoru: " + q }
-        ]
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: q, context }),
       });
-      setMsgs(m => [...m, { role: "assistant", text: reply }]);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Hata");
+      setMsgs(m => [...m, { role: "assistant", text: sanitize(data.text) }]);
     } catch (e) {
       setMsgs(m => [...m, { role: "assistant", text: "Bir hata oluştu, tekrar dener misin?" }]);
     } finally {
