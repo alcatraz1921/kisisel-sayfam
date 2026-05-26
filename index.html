@@ -1128,7 +1128,7 @@ function ClaudeChat({ context }) {
       if (!res.ok) throw new Error(data.error || "Hata");
       setMsgs(m => [...m, { role: "assistant", text: sanitize(data.text) }]);
     } catch (e) {
-      setMsgs(m => [...m, { role: "assistant", text: "HATA: " + e.message }]);
+      setMsgs(m => [...m, { role: "assistant", text: "Bir hata oluştu, tekrar dener misin?" }]);
     } finally {
       setBusy(false);
     }
