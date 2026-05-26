@@ -10,28 +10,32 @@ export default async function handler(req, res) {
 
   const prices = {};
 
+  const errors = {};
+
   await Promise.all(kodlar.map(async (kod) => {
     try {
+      const body = `fontip=YAT&fonkod=${kod}&bastarih=${fmt(gun3Once)}&bittarih=${fmt(bugun)}`;
       const response = await fetch('https://www.tefas.gov.tr/api/DB/BindHistoryInfo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Origin': 'https://www.tefas.gov.tr',
           'Referer': 'https://www.tefas.gov.tr/',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
-        body: `fontip=YAT&fonkod=${kod}&bastarih=${fmt(gun3Once)}&bittarih=${fmt(bugun)}`,
+        body,
       });
-      if (!response.ok) return;
+      if (!response.ok) { errors[kod] = `HTTP ${response.status}`; return; }
       const data = await response.json();
-      if (!data.data || data.data.length === 0) return;
+      if (!data.data || data.data.length === 0) { errors[kod] = 'no_data'; return; }
       const latest = data.data.sort((a, b) => {
         const parse = (s) => { const [d,m,y] = s.split('.'); return new Date(y,m-1,d); };
         return parse(b.TARIH) - parse(a.TARIH);
       })[0];
       prices[kod] = parseFloat(latest.FIYAT);
-    } catch (_) {}
+    } catch (e) { errors[kod] = e.message; }
   }));
 
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
-  return res.json(prices);
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ prices, errors, tarihler: { baslangic: fmt(gun3Once), bitis: fmt(bugun) } });
 }
