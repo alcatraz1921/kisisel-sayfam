@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kişisel Sayfam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ece4d4;
+    --bg-2: #e6dcc8;
+    --card: #f6efe0;
+    --card-2: #fbf5e7;
+    --ink: #1d1812;
+    --ink-2: #4a3f30;
+    --muted: #8a7d65;
+    --line: #d6cab2;
+    --accent: #c66b3d;
+    --accent-soft: #e8b894;
+    --good: #6e8a4c;
+    --bad: #b54a35;
+    --shadow: 0 1px 0 #fff7e6 inset, 0 1px 2px rgba(48,32,12,.04), 0 8px 24px -12px rgba(48,32,12,.10);
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --serif: 'Newsreader', 'Times New Roman', serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    min-height: 100vh;
+  }
+  /* corner ticks */
+  body::before, body::after,
+  .corners::before, .corners::after {
+    content: ""; position: fixed; width: 14px; height: 14px;
+    border-color: var(--ink); border-style: solid; border-width: 0;
+    pointer-events: none; z-index: 50;
+  }
+  body::before { top: 10px; left: 10px; border-top-width: 1px; border-left-width: 1px; }
+  body::after  { top: 10px; right: 10px; border-top-width: 1px; border-right-width: 1px; }
+  .corners::before { bottom: 10px; left: 10px; border-bottom-width: 1px; border-left-width: 1px; }
+  .corners::after  { bottom: 10px; right: 10px; border-bottom-width: 1px; border-right-width: 1px; }
+
+  .mono { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .ink { color: var(--ink); }
+  .italic { font-style: italic; }
+
+  .app {
+    height: 100vh;
+    padding: 28px 30px 22px;
+    display: grid;
+    grid-template-rows: 22px 1fr;
+    gap: 14px;
+  }
+
+  /* top status bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    color: var(--ink-2); text-transform: uppercase;
+  }
+  .topbar .left { display: flex; align-items: center; gap: 10px; }
+  .topbar .right { display: flex; align-items: center; gap: 18px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; box-shadow: 0 0 0 3px rgba(198,107,61,.18); }
+  .sep { color: var(--line); }
+
+  /* main grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1.5fr 1.4fr;
+    grid-template-rows: 168px 1fr 1fr;
+    gap: 14px;
+    min-height: 0;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 16px 14px;
+    box-shadow: var(--shadow);
+    position: relative;
+    min-height: 0;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .card.tight { padding: 12px 14px; }
+  .card.cream { background: var(--card-2); }
+
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .card-head .right { display: flex; align-items: center; gap: 8px; }
+
+  /* spans */
+  .col-span-2 { grid-column: span 2; }
+  .row-span-2 { grid-row: span 2; }
+
+  /* ========== Operator / Profil ========== */
+  .op {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center;
+  }
+  .avatar {
+    width: 84px; height: 100px; border-radius: 8px;
+    background: linear-gradient(160deg, #2a2118 0%, #4a3a26 60%, #6b5337 100%);
+    position: relative; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .avatar::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 38px 30px at 50% 38%, #d3a884 0%, #b48865 55%, transparent 60%),
+      radial-gradient(ellipse 60px 40px at 50% 100%, #1a3a5c 30%, #1a3a5c 60%, transparent 65%);
+  }
+  .name { font-size: 26px; font-weight: 500; letter-spacing: -.01em; line-height: 1; }
+  .name em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .role { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
+  .op-stats { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+  .op-stats .k { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .op-stats .v { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--ink); text-transform: uppercase; font-weight: 600; }
+
+  /* ========== Greeting ========== */
+  .hello {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 16px 22px;
+    background: var(--card-2);
+    display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+  }
+  .hello h1 { font-size: 38px; font-weight: 500; margin: 0; letter-spacing: -.015em; line-height: 1.05; color: var(--ink); }
+  .hello h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .hello .sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
+  .clock { text-align: right; }
+  .clock .time { font-family: var(--serif); font-weight: 500; font-size: 54px; line-height: 1; letter-spacing: -.02em; display: inline-flex; align-items: baseline; gap: 2px; }
+  .clock .time .sec { font-size: 22px; color: var(--muted); margin-left: 4px; }
+  .clock .time .colon { color: var(--accent); font-weight: 400; margin: 0 4px; }
+  .clock .label { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+  /* ========== Net Worth ========== */
+  .worth { grid-column: 3; grid-row: 1; }
+  .worth .big { font-size: 40px; font-weight: 500; letter-spacing: -.02em; line-height: 1.02; }
+  .worth .big .lira { color: var(--muted); font-weight: 400; margin-right: 4px; font-style: italic; }
+  .worth .row { display: flex; gap: 18px; margin-top: 10px; }
+  .worth .row .item { flex: 1; }
+  .worth .row .lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .worth .row .val { font-family: var(--mono); font-size: 13px; color: var(--ink); margin-top: 2px; font-weight: 600; }
+  .delta-up { color: var(--good); }
+  .delta-dn { color: var(--bad); }
+  .worth .bar { height: 6px; background: var(--bg-2); border-radius: 3px; margin-top: 10px; overflow: hidden; position: relative; }
+  .worth .bar > div { height: 100%; background: var(--accent); }
+
+  /* ========== Projeler ========== */
+  .projects { grid-column: 1; grid-row: 2; }
+  .proj-list { display: flex; flex-direction: column; gap: 10px; overflow: auto; padding-right: 2px; }
+  .proj-list::-webkit-scrollbar { width: 4px; }
+  .proj-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  .proj {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .proj:last-child { border-bottom: 0; }
+  .proj .title { font-size: 16px; font-weight: 500; letter-spacing: -.005em; }
+  .proj .title em { font-style: italic; color: var(--ink-2); font-weight: 500; }
+  .proj .meta { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .pill {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 6px; border-radius: 4px; background: var(--bg-2); color: var(--ink-2); font-weight: 600;
+  }
+  .pill.accent { background: var(--accent); color: #fff; }
+  .pill.good { background: #d8e0c5; color: #455a25; }
+  .pill.bad  { background: #efc8be; color: #7a2516; }
+  .progress { height: 4px; background: var(--bg-2); border-radius: 2px; grid-column: 1/-1; margin-top: 4px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); }
+
+  /* ========== Todos ========== */
+  .todos { grid-column: 2; grid-row: 2; }
+  .todo-list { display: flex; flex-direction: column; gap: 2px; overflow: auto; padding-right: 2px; }
+  .todo {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; padding: 8px 0; align-items: center;
+    border-bottom: 1px solid var(--line); cursor: pointer; user-select: none;
+  }
+  .todo:last-child { border-bottom: 0; }
+  .check {
+    width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--ink-2);
+    display: inline-flex; align-items: center; justify-content: center; flex: none; background: transparent;
+  }
+  .todo.done .check { background: var(--ink); border-color: var(--ink); color: #f6efe0; }
+  .todo.done .check::after { content: "✓"; font-family: var(--mono); font-size: 10px; }
+  .todo.done .label { text-decoration: line-through; color: var(--muted); }
+  .todo .label { font-size: 14.5px; }
+  .todo .label .tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-left: 8px; }
+  .todo .time { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+  .todo .time.now { color: var(--accent); font-weight: 600; }
+  .todo-input {
+    display: flex; gap: 8px; align-items: center; padding-top: 10px; border-top: 1px dashed var(--line); margin-top: 8px;
+  }
+  .todo-input input {
+    flex: 1; border: 0; background: transparent; font-family: var(--serif); font-size: 14px; color: var(--ink); outline: none;
+  }
+  .todo-input input::placeholder { color: var(--muted); font-style: italic; }
+  .todo-input button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--ink); color: var(--card); border: 0; border-radius: 4px; padding: 5px 10px; cursor: pointer;
+  }
+
+  /* ========== Finance: Gelir/Gider ========== */
+  .cash { grid-column: 3; grid-row: 2; }
+  .cash-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cash-top .blk .v { font-size: 26px; font-weight: 500; letter-spacing: -.01em; }
+  .cash-top .blk .v.bad { color: var(--bad); }
+  .cash-top .blk .v.good { color: var(--good); }
+  .cash-top .blk .lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .cash-top .blk .sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .cash-bars { display: flex; align-items: flex-end; gap: 4px; height: 64px; margin-top: 12px; padding-top: 4px; border-top: 1px solid var(--line); }
+  .cash-bars .day { flex: 1; display: flex; flex-direction: column-reverse; gap: 1px; align-items: stretch; height: 100%; }
+  .cash-bars .in { background: var(--good); border-radius: 1px; }
+  .cash-bars .out { background: var(--accent); opacity: .65; border-radius: 1px; }
+  .cash-legend { display: flex; gap: 14px; margin-top: 6px; font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  /* ========== Borçlar (left col bottom) ========== */
+  .debts { grid-column: 1; grid-row: 3; }
+  .debts .total { font-size: 28px; font-weight: 500; letter-spacing: -.01em; color: var(--bad); }
+  .debts .total .lira { color: var(--muted); font-style: italic; font-weight: 400; margin-right: 4px; }
+  .debt-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; overflow: auto; }
+  .debt {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 8px;
+    padding: 8px 0; border-top: 1px solid var(--line);
+  }
+  .debt .who { font-size: 14px; font-weight: 500; }
+  .debt .amt { font-family: var(--mono); font-size: 12px; color: var(--ink); font-weight: 600; }
+  .debt .meta { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .debt .when { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; text-align: right; }
+
+  /* ========== Fonlar (canlı) middle col bottom ========== */
+  .funds { grid-column: 2; grid-row: 3; }
+  .funds-head { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .funds-head .blk .lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .funds-head .blk .v { font-size: 22px; font-weight: 500; letter-spacing: -.01em; margin-top: 2px; }
+  .funds-head .blk .d { font-family: var(--mono); font-size: 10px; margin-top: 1px; font-weight: 600; }
+  .fund-list { display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 8px; overflow: auto; }
+  .fund {
+    display: grid; grid-template-columns: 50px 1fr auto auto; gap: 10px; align-items: center;
+    padding: 7px 0; border-top: 1px solid var(--line);
+  }
+  .fund .code { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+  .fund .name { font-size: 13px; color: var(--ink-2); }
+  .fund .price { font-family: var(--mono); font-size: 12px; font-weight: 600; text-align: right; }
+  .fund .ch { font-family: var(--mono); font-size: 10.5px; font-weight: 600; text-align: right; width: 56px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); display: inline-block; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  /* ========== Vadeli + Claude column right ========== */
+  .deposit { grid-column: 3; grid-row: 3; display: grid; grid-template-columns: 1fr; gap: 14px; padding: 0; background: transparent; box-shadow: none; }
+
+  .vadeli {
+    background: var(--card); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; align-items: end;
+  }
+  .vadeli .head { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; }
+  .vadeli .big { font-size: 28px; font-weight: 500; letter-spacing: -.01em; }
+  .vadeli .big .lira { color: var(--muted); font-style: italic; font-weight: 400; margin-right: 4px; }
+  .vadeli .blk .lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .vadeli .blk .v { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .vadeli .blk .v em { font-style: italic; font-family: var(--serif); color: var(--accent); font-weight: 500; }
+  .vadeli .ring {
+    --p: 64;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--bg-2) 0);
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .vadeli .ring::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--card); }
+  .vadeli .ring span { font-family: var(--mono); font-size: 10px; font-weight: 600; position: relative; z-index: 1; }
+
+  /* ========== Claude AI ========== */
+  .claude {
+    background: var(--ink); color: var(--card-2);
+    border-radius: 14px; padding: 12px 14px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+    flex: 1;
+  }
+  .claude .head { color: var(--card-2); }
+  .claude .mono { color: rgba(246,239,224,.5); }
+  .claude .head .title { font-family: var(--serif); font-size: 16px; font-weight: 500; }
+  .claude .head .title em { font-style: italic; color: var(--accent-soft); }
+  .messages { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 0; min-height: 0; }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: rgba(246,239,224,.15); border-radius: 2px; }
+  .msg { display: flex; gap: 8px; align-items: flex-start; }
+  .msg .role { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: rgba(246,239,224,.45); flex: none; width: 36px; padding-top: 3px; }
+  .msg .body { font-size: 13.5px; line-height: 1.45; color: var(--card-2); }
+  .msg.assistant .body em { color: var(--accent-soft); font-style: italic; }
+  .msg.user .body { color: #ece4d4; }
+  .typing { display: inline-flex; gap: 3px; align-items: center; padding: 4px 0; }
+  .typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-soft); animation: blink 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100% { opacity: .3; } 40% { opacity: 1; } }
+
+  .composer { display: flex; gap: 8px; align-items: center; padding-top: 8px; border-top: 1px solid rgba(246,239,224,.12); }
+  .composer input {
+    flex: 1; background: transparent; border: 0; color: var(--card-2); font-family: var(--serif); font-size: 14px; outline: none;
+  }
+  .composer input::placeholder { color: rgba(246,239,224,.4); font-style: italic; }
+  .composer button {
+    background: var(--accent); color: var(--ink); border: 0; border-radius: 6px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .composer button:disabled { opacity: .4; cursor: not-allowed; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .chip {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid rgba(246,239,224,.25); color: rgba(246,239,224,.7);
+    background: transparent; border-radius: 4px; padding: 4px 7px; cursor: pointer;
+  }
+  .chip:hover { background: rgba(246,239,224,.06); color: var(--card-2); }
+</style>
+</head>
+<body>
+<div class="corners"></div>
+
+<div class="app">
+  <!-- Top status bar -->
+  <div class="topbar">
+    <div class="left">
+      <span class="dot"></span>
+      <span>Kişisel Sayfam · v1.0</span>
+      <span class="sep">/</span>
+      <span id="status-focus">Odak · Derin Çalışma</span>
+    </div>
+    <div class="right">
+      <span>İstanbul</span>
+      <span class="sep">·</span>
+      <span id="datestamp"></span>
+    </div>
+  </div>
+
+  <div class="grid" id="root"></div>
+</div>
+
+<script>
+  function updateStamp() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2,"0");
+    const stamp = String(d.getFullYear()) + pad(d.getMonth()+1) + pad(d.getDate()) + "·" + pad(d.getHours()) + pad(d.getMinutes());
+    document.getElementById("datestamp").textContent = stamp;
+  }
+  updateStamp();
+  setInterval(updateStamp, 1000);
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ----------- helpers -----------
+const TL = (n, dec = 0) => n.toLocaleString("tr-TR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const TLm = (n) => {
+  if (Math.abs(n) >= 1_000_000) return TL(n/1_000_000, 1).replace(/,0$/, "") + "M";
+  if (Math.abs(n) >= 1_000) return TL(Math.round(n/100)/10, 1) + "k";
+  return TL(n);
+};
+const greet = (h) => h < 5 ? "İyi geceler" : h < 12 ? "Günaydın" : h < 18 ? "İyi günler" : "İyi akşamlar";
+const SAATLER = ["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];
+const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+
+// ----------- shared micro styles -----------
+const editBtn = {
+  fontFamily:"var(--mono)", fontSize:9, letterSpacing:".1em", textTransform:"uppercase",
+  background:"transparent", border:"1px solid var(--line)", borderRadius:3,
+  padding:"2px 6px", cursor:"pointer", color:"var(--ink-2)"
+};
+const miniInput = {
+  border:0, borderBottom:"1px solid var(--line)", background:"transparent",
+  fontFamily:"var(--serif)", fontSize:13, color:"var(--ink)", outline:"none",
+  padding:"2px 0", width:"100%"
+};
+
+// ----------- Operator card -----------
+function Operator() {
+  const [editing, setEditing] = useState(false);
+  const [ad, setAd]       = useState("Atakan");
+  const [soyad, setSoyad] = useState("Ersümer");
+  const [role, setRole]   = useState("Yazılım Geliştirici · İstanbul");
+  const [odak, setOdak]   = useState("Derin Çalışma");
+  const [durum, setDurum] = useState("Rahatsız Etme");
+  const [foto, setFoto]   = useState(null);
+  const fileRef = useRef(null);
+
+  const onFotoSec = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setFoto(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="card op" style={{alignItems: editing ? "start" : "center"}}>
+      <div
+        className="avatar"
+        onClick={() => fileRef.current.click()}
+        title="Fotoğraf değiştir"
+        style={{cursor:"pointer", position:"relative"}}
+      >
+        {foto && <img src={foto} alt="profil" style={{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", borderRadius:8}} />}
+        <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background: foto ? "rgba(0,0,0,.35)" : "transparent", borderRadius:8, opacity: foto ? 0 : 1, transition:"opacity .2s"}}
+          onMouseEnter={e => e.currentTarget.style.opacity=1}
+          onMouseLeave={e => e.currentTarget.style.opacity= foto ? 0 : 1}
+        >
+          <span style={{fontFamily:"var(--mono)", fontSize:9, color:"#fff", letterSpacing:".08em", textTransform:"uppercase"}}>Değiştir</span>
+        </div>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onFotoSec} />
+      <div style={{width:"100%"}}>
+        <div className="mono" style={{marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <span>01 // Profil</span>
+          <span style={{display:"flex", gap:6, alignItems:"center"}}>
+            <span style={{color:"var(--good)"}}>● Online</span>
+            <button style={editBtn} onClick={() => setEditing(e => !e)}>
+              {editing ? "Kaydet" : "Düzenle"}
+            </button>
+          </span>
+        </div>
+        {editing ? (
+          <div style={{display:"flex", flexDirection:"column", gap:7}}>
+            <div style={{display:"flex", gap:8}}>
+              <input style={miniInput} value={ad}    onChange={e=>setAd(e.target.value)}    placeholder="Ad" />
+              <input style={miniInput} value={soyad} onChange={e=>setSoyad(e.target.value)} placeholder="Soyad" />
+            </div>
+            <input style={miniInput} value={role}  onChange={e=>setRole(e.target.value)}  placeholder="Rol · Şehir" />
+            <input style={miniInput} value={odak}  onChange={e=>setOdak(e.target.value)}  placeholder="Odak" />
+            <input style={miniInput} value={durum} onChange={e=>setDurum(e.target.value)} placeholder="Durum" />
+          </div>
+        ) : (
+          <>
+            <div className="name">{ad} <em>{soyad}</em></div>
+            <div className="role">{role}</div>
+            <div className="op-stats">
+              <div><div className="k">Odak</div><div className="v">{odak}</div></div>
+              <div><div className="k">Durum</div><div className="v">{durum}</div></div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----------- Greeting + clock -----------
+function Hello() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const hh = String(now.getHours()).padStart(2,"0");
+  const mm = String(now.getMinutes()).padStart(2,"0");
+  const ss = String(now.getSeconds()).padStart(2,"0");
+  const dayNum = now.getDate();
+  const month = AYLAR[now.getMonth()];
+  const dow = SAATLER[(now.getDay()+6)%7]; // tr: Pzt baş
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  return (
+    <div className="card hello">
+      <div>
+        <div className="mono" style={{marginBottom:10}}>02 // Bugün</div>
+        <h1>{greet(now.getHours())}, <em>Atakan.</em></h1>
+        <div className="sub">{dow} · {dayNum} {month} {now.getFullYear()} · Yılın {dayOfYear}. Günü</div>
+      </div>
+      <div className="clock">
+        <div className="mono" style={{marginBottom:8}}>Yerel Saat · UTC+03</div>
+        <div className="time">
+          <span>{hh}</span>
+          <span className="colon">:</span>
+          <span>{mm}</span>
+          <span className="sec">{ss}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------- Net worth -----------
+function NetWorth({ totals }) {
+  const { net, assets, debt, fonChange } = totals;
+  return (
+    <div className="card worth">
+      <div className="card-head">
+        <span className="mono">03 // Net Varlık</span>
+        <span className="mono" style={{color:"var(--good)"}}>● Canlı</span>
+      </div>
+      <div className="big"><span className="lira">₺</span>{TL(net)}</div>
+      <div className="row">
+        <div className="item">
+          <div className="lbl">Toplam Varlık</div>
+          <div className="val">₺{TL(assets)}</div>
+        </div>
+        <div className="item">
+          <div className="lbl">Toplam Borç</div>
+          <div className="val">₺{TL(debt)}</div>
+        </div>
+        <div className="item">
+          <div className="lbl">Bugün</div>
+          <div className={"val " + (fonChange >= 0 ? "delta-up" : "delta-dn")}>
+            {fonChange >= 0 ? "▲" : "▼"} ₺{TL(Math.abs(Math.round(fonChange)))}
+          </div>
+        </div>
+      </div>
+      <div className="bar"><div style={{width: (assets+debt > 0 ? Math.max(4, Math.min(100, (assets/(assets+debt))*100)) : 0) + "%"}}></div></div>
+      <div className="mono" style={{marginTop:6, display:"flex", justifyContent:"space-between"}}>
+        <span>Varlık/Borç Oranı</span>
+        <span>{assets+debt > 0 ? Math.round((assets/(assets+debt))*100) : 0}%</span>
+      </div>
+    </div>
+  );
+}
+
+// ----------- Projeler -----------
+const PROJELER_INIT = [];
+
+const PILL_OPTIONS = ["accent","good","bad","default"];
+
+function Projects() {
+  const [projeler, setProjeler] = useState(PROJELER_INIT);
+  const [editing, setEditing]   = useState(false);
+  const [yeni, setYeni]         = useState({ ad:"", em:"", durum:"", ilerleme:"0", son:"", pill:"default" });
+
+  const sil = (i) => setProjeler(prev => prev.filter((_,idx) => idx !== i));
+
+  const guncelle = (i, field, val) =>
+    setProjeler(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: field==="ilerleme" ? Math.min(100, Math.max(0, parseInt(val)||0)) : val } : p));
+
+  const ekle = () => {
+    if (!yeni.ad.trim()) return;
+    setProjeler(prev => [...prev, { ...yeni, ilerleme: parseInt(yeni.ilerleme)||0 }]);
+    setYeni({ ad:"", em:"", durum:"", ilerleme:"0", son:"", pill:"default" });
+  };
+
+  return (
+    <div className="card projects">
+      <div className="card-head">
+        <span className="mono">04 // Projeler</span>
+        <span style={{display:"flex", gap:6, alignItems:"center"}}>
+          <span className="mono">{projeler.length} aktif</span>
+          <button style={editBtn} onClick={() => setEditing(e => !e)}>
+            {editing ? "Tamam" : "Düzenle"}
+          </button>
+        </span>
+      </div>
+      <div className="proj-list">
+        {projeler.map((p, i) => (
+          <div className="proj" key={i}>
+            {editing ? (
+              <>
+                <div style={{display:"flex", gap:4, gridColumn:"1/-1"}}>
+                  <input style={{...miniInput, flex:1}} value={p.ad} onChange={e=>guncelle(i,"ad",e.target.value)} placeholder="Ad" />
+                  <input style={{...miniInput, flex:1}} value={p.em} onChange={e=>guncelle(i,"em",e.target.value)} placeholder="Alt başlık" />
+                  <input style={{...miniInput, width:60}} value={p.durum} onChange={e=>guncelle(i,"durum",e.target.value)} placeholder="Durum" />
+                  <input style={{...miniInput, width:36}} value={p.son} onChange={e=>guncelle(i,"son",e.target.value)} placeholder="Tarih" />
+                  <input style={{...miniInput, width:32}} type="number" min="0" max="100" value={p.ilerleme} onChange={e=>guncelle(i,"ilerleme",e.target.value)} />
+                  <select value={p.pill} onChange={e=>guncelle(i,"pill",e.target.value)}
+                    style={{fontFamily:"var(--mono)", fontSize:9, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"2px 4px", color:"var(--ink-2)"}}>
+                    {PILL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                  <button onClick={() => sil(i)} style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--bad)", padding:"0 2px"}}>×</button>
+                </div>
+                <div className="progress" style={{gridColumn:"1/-1"}}><div style={{width: p.ilerleme + "%"}}></div></div>
+              </>
+            ) : (
+              <>
+                <div className="title">{p.ad} <em>{p.em}</em></div>
+                <span className={"pill " + p.pill}>{p.durum}</span>
+                <div className="meta">Son · {p.son}</div>
+                <div className="meta" style={{textAlign:"right"}}>%{p.ilerleme}</div>
+                <div className="progress"><div style={{width: p.ilerleme + "%"}}></div></div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      {editing && (
+        <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
+          <div style={{display:"flex", gap:4}}>
+            <input style={{...miniInput, flex:1}} placeholder="Proje adı" value={yeni.ad} onChange={e=>setYeni({...yeni, ad:e.target.value})} />
+            <input style={{...miniInput, flex:1}} placeholder="Alt başlık" value={yeni.em} onChange={e=>setYeni({...yeni, em:e.target.value})} />
+          </div>
+          <div style={{display:"flex", gap:4, alignItems:"center"}}>
+            <input style={{...miniInput, flex:1}} placeholder="Durum" value={yeni.durum} onChange={e=>setYeni({...yeni, durum:e.target.value})} />
+            <input style={{...miniInput, width:60}} placeholder="Tarih" value={yeni.son} onChange={e=>setYeni({...yeni, son:e.target.value})} />
+            <input style={{...miniInput, width:32}} type="number" min="0" max="100" placeholder="%" value={yeni.ilerleme} onChange={e=>setYeni({...yeni, ilerleme:e.target.value})} />
+            <select value={yeni.pill} onChange={e=>setYeni({...yeni, pill:e.target.value})}
+              style={{fontFamily:"var(--mono)", fontSize:9, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"2px 4px", color:"var(--ink-2)"}}>
+              {PILL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 8px"}} onClick={ekle}>Ekle</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------- Todos -----------
+const INITIAL_TODOS = [];
+
+function Todos() {
+  const [items, setItems] = useState(INITIAL_TODOS);
+  const [txt, setTxt] = useState("");
+  const toggle = (id) => setItems(items.map(t => t.id === id ? {...t, done: !t.done} : t));
+  const add = () => {
+    if (!txt.trim()) return;
+    setItems([...items, { id: Date.now(), label: txt.trim(), tag: "Yeni", time: "—", done: false, now: false }]);
+    setTxt("");
+  };
+  const left = items.filter(t => !t.done).length;
+  return (
+    <div className="card todos">
+      <div className="card-head">
+        <span className="mono">05 // Yapılacaklar</span>
+        <span className="mono">{left} kaldı · {items.length-left}/{items.length} tamam</span>
+      </div>
+      <div className="todo-list">
+        {items.map(t => (
+          <div className={"todo " + (t.done ? "done" : "")} key={t.id} onClick={() => toggle(t.id)}>
+            <span className="check"></span>
+            <div className="label">{t.label}<span className="tag">· {t.tag}</span></div>
+            <div style={{display:"flex", alignItems:"center", gap:6}}>
+              <div className={"time " + (t.now ? "now" : "")}>{t.now ? "Şimdi · " : ""}{t.time}</div>
+              <button
+                onClick={e => { e.stopPropagation(); setItems(prev => prev.filter(x => x.id !== t.id)); }}
+                style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", lineHeight:1, opacity:.5}}
+                title="Sil"
+              >×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="todo-input">
+        <input
+          placeholder="Yeni görev ekle…"
+          value={txt}
+          onChange={e => setTxt(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && add()}
+        />
+        <button onClick={add}>Ekle</button>
+      </div>
+    </div>
+  );
+}
+
+// ----------- Cash flow (gelir/gider) -----------
+const CASH_DAYS_INIT = [
+  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
+  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
+  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
+];
+const GELIR_ADLARI  = ["Maaş","Freelance","Kira Geliri","Temettü","Fatura İadesi","Diğer"];
+const GIDER_ADLARI  = ["Market","Kira","Fatura","Yakıt","Yemek","Sağlık","Eğlence","Giyim","Abonelik","Diğer"];
+
+function Cash() {
+  const [entries, setEntries] = useState([]);
+  const [amount, setAmount]   = useState("");
+  const [ad, setAd]           = useState("Maaş");
+  const [entryType, setEntryType] = useState("in");
+
+  const histGelir = CASH_DAYS_INIT.reduce((a, d) => a + d.in,  0);
+  const histGider = CASH_DAYS_INIT.reduce((a, d) => a + d.out, 0);
+  const manGelir  = entries.filter(e => e.type === "in" ).reduce((a,e) => a + e.amt, 0);
+  const manGider  = entries.filter(e => e.type === "out").reduce((a,e) => a + e.amt, 0);
+  const gelir = histGelir + manGelir;
+  const gider = histGider + manGider;
+  const net   = gelir - gider;
+
+  const days = CASH_DAYS_INIT.map((d, i) =>
+    i === CASH_DAYS_INIT.length - 1
+      ? { in: d.in + manGelir, out: d.out + manGider }
+      : d
+  );
+  const max = Math.max(...days.map(d => d.in + d.out), 1);
+
+  const addEntry = () => {
+    const val = parseFloat(amount.replace(",", "."));
+    if (!val || isNaN(val) || val <= 0) return;
+    setEntries(prev => [...prev, { id: Date.now(), type: entryType, amt: val, ad }]);
+    setAmount("");
+  };
+
+  const sil = (id) => setEntries(prev => prev.filter(e => e.id !== id));
+
+  const adOptions = entryType === "in" ? GELIR_ADLARI : GIDER_ADLARI;
+  const now = new Date();
+  const month = AYLAR[now.getMonth()] + " " + now.getFullYear();
+
+  return (
+    <div className="card cash">
+      <div className="card-head">
+        <span className="mono">06 // Bu Ay · Nakit Akış</span>
+        <span className="mono">{month}</span>
+      </div>
+      <div className="cash-top">
+        <div className="blk">
+          <div className="lbl">Gelir</div>
+          <div className="v good">₺{TL(gelir)}</div>
+        </div>
+        <div className="blk">
+          <div className="lbl">Gider</div>
+          <div className="v bad">₺{TL(gider)}</div>
+        </div>
+        <div className="blk" style={{gridColumn:"1/-1", marginTop:4}}>
+          <div className="lbl">Net Tasarruf · %{gelir > 0 ? Math.round(net/gelir*100) : 0} oran</div>
+          <div className="v" style={{fontSize:20}}>₺{TL(net)}</div>
+        </div>
+      </div>
+      <div className="cash-bars">
+        {days.map((d,i) => {
+          const hIn  = (d.in /max) * 100;
+          const hOut = (d.out/max) * 100;
+          return (
+            <div className="day" key={i}>
+              <div className="out" style={{height: hOut + "%"}}></div>
+              <div className="in"  style={{height: hIn  + "%"}}></div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="cash-legend">
+        <span><span className="swatch" style={{background:"var(--good)"}}></span>Gelir</span>
+        <span><span className="swatch" style={{background:"var(--accent)", opacity:.65}}></span>Gider</span>
+        <span style={{marginLeft:"auto"}}>Son {days.length} gün</span>
+      </div>
+
+      {entries.length > 0 && (
+        <div style={{marginTop:8, display:"flex", flexDirection:"column", gap:0, overflow:"auto", maxHeight:80}}>
+          {entries.map(e => (
+            <div key={e.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", borderTop:"1px solid var(--line)"}}>
+              <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{e.ad}</span>
+              <span style={{display:"flex", alignItems:"center", gap:6}}>
+                <span style={{fontFamily:"var(--mono)", fontSize:11, fontWeight:600, color: e.type==="in" ? "var(--good)" : "var(--bad)"}}>
+                  {e.type==="in" ? "+" : "-"}₺{TL(e.amt)}
+                </span>
+                <button onClick={() => sil(e.id)} style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", opacity:.6}}>×</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
+        <div style={{display:"flex", gap:4}}>
+          <button onClick={() => { setEntryType("in");  setAd(GELIR_ADLARI[0]); }}
+            style={{fontFamily:"var(--mono)", fontSize:10, letterSpacing:".1em", textTransform:"uppercase", padding:"4px 8px", borderRadius:4, border:"1px solid var(--line)", cursor:"pointer", background: entryType==="in" ? "var(--good)" : "transparent", color: entryType==="in" ? "#fff" : "var(--muted)"}}>
+            + Gelir
+          </button>
+          <button onClick={() => { setEntryType("out"); setAd(GIDER_ADLARI[0]); }}
+            style={{fontFamily:"var(--mono)", fontSize:10, letterSpacing:".1em", textTransform:"uppercase", padding:"4px 8px", borderRadius:4, border:"1px solid var(--line)", cursor:"pointer", background: entryType==="out" ? "var(--bad)" : "transparent", color: entryType==="out" ? "#fff" : "var(--muted)"}}>
+            - Gider
+          </button>
+        </div>
+        <div style={{display:"flex", gap:6, alignItems:"center"}}>
+          <select value={ad} onChange={e => setAd(e.target.value)}
+            style={{flex:1, fontFamily:"var(--mono)", fontSize:10, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"4px 6px", color:"var(--ink-2)", textTransform:"uppercase", letterSpacing:".06em"}}>
+            {adOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          <input placeholder="Tutar (₺)" value={amount}
+            onChange={e => setAmount(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addEntry()}
+            style={{...miniInput, width:80, textAlign:"right"}} />
+          <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 8px"}} onClick={addEntry}>Ekle</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------- Borçlar -----------
+const BORCLAR_INIT = [];
+function Debts({ borclar, setBorclar }) {
+  const [editing, setEditing] = useState(false);
+  const [yeni, setYeni] = useState({ who:"", bank:"", amt:"", kalan:"" });
+
+  const toplam = borclar.reduce((a,b)=>a+b.amt, 0);
+
+  const ekle = () => {
+    const amt = parseFloat(yeni.amt.replace(",","."));
+    if (!yeni.who.trim() || !amt || isNaN(amt)) return;
+    setBorclar(prev => [...prev, { who:yeni.who.trim(), bank:yeni.bank.trim(), amt, kalan:yeni.kalan.trim() }]);
+    setYeni({ who:"", bank:"", amt:"", kalan:"" });
+  };
+
+  const sil = (i) => setBorclar(prev => prev.filter((_,idx) => idx !== i));
+
+  return (
+    <div className="card debts">
+      <div className="card-head">
+        <span className="mono">07 // Borçlar</span>
+        <span style={{display:"flex", gap:6, alignItems:"center"}}>
+          <span className="mono">{borclar.length} aktif</span>
+          <button style={editBtn} onClick={() => setEditing(e => !e)}>
+            {editing ? "Tamam" : "Düzenle"}
+          </button>
+        </span>
+      </div>
+      <div className="mono" style={{fontSize:9.5}}>Toplam Borç</div>
+      <div className="total"><span className="lira">₺</span>{TL(toplam)}</div>
+      <div className="debt-list">
+        {borclar.map((d, i) => (
+          <div className="debt" key={i}>
+            <div className="who">{d.who}</div>
+            <div style={{display:"flex", alignItems:"center", gap:6}}>
+              <div className="amt">₺{TL(d.amt)}</div>
+              {editing && (
+                <button onClick={() => sil(i)} style={{
+                  fontFamily:"var(--mono)", fontSize:11, background:"transparent",
+                  border:"none", cursor:"pointer", color:"var(--bad)", padding:"0 2px", lineHeight:1
+                }}>×</button>
+              )}
+            </div>
+            <div className="meta">{d.bank}</div>
+            <div className="when">{d.kalan}</div>
+          </div>
+        ))}
+      </div>
+      {editing && (
+        <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
+          <div style={{display:"flex", gap:6}}>
+            <input style={{...miniInput, flex:2}} placeholder="Borç adı (ör. Kredi Kartı)" value={yeni.who} onChange={e=>setYeni({...yeni, who:e.target.value})} />
+            <input style={{...miniInput, flex:1}} placeholder="Banka" value={yeni.bank} onChange={e=>setYeni({...yeni, bank:e.target.value})} />
+          </div>
+          <div style={{display:"flex", gap:6, alignItems:"center"}}>
+            <input style={{...miniInput, flex:1}} placeholder="Tutar (₺)" value={yeni.amt} onChange={e=>setYeni({...yeni, amt:e.target.value})} />
+            <input style={{...miniInput, flex:1}} placeholder="Kalan (ör. 12 ay)" value={yeni.kalan} onChange={e=>setYeni({...yeni, kalan:e.target.value})} onKeyDown={e=>e.key==="Enter"&&ekle()} />
+            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 8px"}} onClick={ekle}>Ekle</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------- Fonlar (canlı) -----------
+const INITIAL_FUNDS = [];
+
+function Funds({ funds, setFunds, lastTick }) {
+  const [editing, setEditing] = useState(false);
+  const [yeni, setYeni] = useState({ code:"", name:"", adet:"", base:"" });
+
+  const totalNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
+  const totalBase = funds.reduce((a,f) => a + f.base  * f.adet, 0);
+  const delta = totalNow - totalBase;
+  const pct = totalBase > 0 ? (delta / totalBase) * 100 : 0;
+
+  const sil = (code) => setFunds(prev => prev.filter(f => f.code !== code));
+
+  const ekle = () => {
+    const adet = parseFloat(yeni.adet.replace(",","."));
+    const base = parseFloat(yeni.base.replace(",","."));
+    if (!yeni.code.trim() || !yeni.name.trim() || !adet || !base) return;
+    setFunds(prev => [...prev, { code: yeni.code.trim().toUpperCase(), name: yeni.name.trim(), adet, price: base, base }]);
+    setYeni({ code:"", name:"", adet:"", base:"" });
+  };
+
+  const updateAdet = (code, val) => {
+    const n = parseFloat(val.replace(",","."));
+    if (isNaN(n) || n < 0) return;
+    setFunds(prev => prev.map(f => f.code === code ? { ...f, adet: n } : f));
+  };
+
+  return (
+    <div className="card funds">
+      <div className="card-head">
+        <span className="mono">08 // Fonlar · Canlı</span>
+        <span style={{display:"flex", gap:6, alignItems:"center"}}>
+          <span className="mono"><span className="live-dot"></span>&nbsp;&nbsp;{lastTick}</span>
+          <button style={editBtn} onClick={() => setEditing(e => !e)}>
+            {editing ? "Tamam" : "Düzenle"}
+          </button>
+        </span>
+      </div>
+      <div className="funds-head">
+        <div className="blk">
+          <div className="lbl">Toplam Değer</div>
+          <div className="v">₺{TL(Math.round(totalNow))}</div>
+        </div>
+        <div className="blk">
+          <div className="lbl">Maliyet</div>
+          <div className="v">₺{TL(Math.round(totalBase))}</div>
+        </div>
+        <div className="blk">
+          <div className="lbl">Toplam K/Z</div>
+          <div className="v" style={{color: delta>=0 ? "var(--good)" : "var(--bad)"}}>
+            {delta>=0 ? "▲" : "▼"} ₺{TL(Math.abs(Math.round(delta)))}
+          </div>
+          <div className="d" style={{color: delta>=0 ? "var(--good)" : "var(--bad)"}}>
+            {delta>=0 ? "+" : ""}{pct.toFixed(2)}%
+          </div>
+        </div>
+      </div>
+      <div className="fund-list">
+        {funds.map(f => {
+          const ch = ((f.price - f.base) / f.base) * 100;
+          const up = ch >= 0;
+          return (
+            <div className="fund" key={f.code}>
+              <div className="code">{f.code}</div>
+              <div className="name">
+                {f.name}
+                <div style={{fontFamily:"var(--mono)", fontSize:9, color:"var(--muted)", marginTop:1, letterSpacing:".06em", textTransform:"uppercase"}}>
+                  {editing
+                    ? <input
+                        defaultValue={f.adet}
+                        onBlur={e => updateAdet(f.code, e.target.value)}
+                        style={{...miniInput, fontSize:9, width:60}}
+                        placeholder="pay"
+                      />
+                    : TL(f.adet) + " pay"
+                  }
+                </div>
+              </div>
+              <div className="price">₺{f.price.toFixed(5)}</div>
+              {editing
+                ? <button onClick={() => sil(f.code)} style={{
+                    fontFamily:"var(--mono)", fontSize:11, background:"transparent",
+                    border:"none", cursor:"pointer", color:"var(--bad)", padding:"0 2px"
+                  }}>×</button>
+                : <div className="ch" style={{color: up ? "var(--good)" : "var(--bad)"}}>
+                    {up ? "▲" : "▼"} {Math.abs(ch).toFixed(2)}%
+                  </div>
+              }
+            </div>
+          );
+        })}
+      </div>
+      {editing && (
+        <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
+          <div style={{display:"flex", gap:6}}>
+            <input style={{...miniInput, width:52}} placeholder="Kod (AFA)" value={yeni.code} onChange={e=>setYeni({...yeni, code:e.target.value})} />
+            <input style={{...miniInput, flex:1}} placeholder="Fon Adı" value={yeni.name} onChange={e=>setYeni({...yeni, name:e.target.value})} />
+          </div>
+          <div style={{display:"flex", gap:6, alignItems:"center"}}>
+            <input style={{...miniInput, flex:1}} placeholder="Pay adedi" value={yeni.adet} onChange={e=>setYeni({...yeni, adet:e.target.value})} />
+            <input style={{...miniInput, flex:1}} placeholder="Alış fiyatı" value={yeni.base} onChange={e=>setYeni({...yeni, base:e.target.value})} onKeyDown={e=>e.key==="Enter"&&ekle()} />
+            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 8px"}} onClick={ekle}>Ekle</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------- Vadeli + Claude column -----------
+function Vadeli({ vadeli, setVadeli }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    tutar: String(vadeli.tutar),
+    faiz:  String(vadeli.faiz),
+    gun:   String(vadeli.gun),
+    kalan: String(vadeli.kalan),
+  });
+
+  const kaydet = () => {
+    const t = parseFloat(form.tutar.replace(",",".")), f = parseFloat(form.faiz.replace(",","."));
+    const g = parseInt(form.gun), k = parseInt(form.kalan);
+    if (!t || !f || !g || isNaN(k)) return;
+    setVadeli({ tutar:t, faiz:f, gun:g, kalan:k });
+    setEditing(false);
+  };
+
+  const pct    = Math.round(((vadeli.gun - vadeli.kalan) / vadeli.gun) * 100);
+  const kazanc = Math.round(vadeli.tutar * (vadeli.faiz/100) * (vadeli.gun/365));
+
+  return (
+    <div className="vadeli">
+      <div className="head">
+        <span className="mono">09 // Vadeli Mevduat</span>
+        <span style={{display:"flex", gap:6, alignItems:"center"}}>
+          <span className="mono">{vadeli.kalan} gün kaldı</span>
+          <button style={editBtn} onClick={() => {
+            setForm({ tutar:String(vadeli.tutar), faiz:String(vadeli.faiz), gun:String(vadeli.gun), kalan:String(vadeli.kalan) });
+            editing ? kaydet() : setEditing(true);
+          }}>
+            {editing ? "Kaydet" : "Düzenle"}
+          </button>
+        </span>
+      </div>
+      {editing ? (
+        <div style={{gridColumn:"1/-1", display:"flex", flexDirection:"column", gap:8}}>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+            <div>
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Anapara (₺)</div>
+              <input style={miniInput} value={form.tutar} onChange={e=>setForm({...form, tutar:e.target.value})} placeholder="125000" />
+            </div>
+            <div>
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Faiz % (yıllık)</div>
+              <input style={miniInput} value={form.faiz} onChange={e=>setForm({...form, faiz:e.target.value})} placeholder="48.5" />
+            </div>
+            <div>
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Toplam Gün</div>
+              <input style={miniInput} value={form.gun} onChange={e=>setForm({...form, gun:e.target.value})} placeholder="92" />
+            </div>
+            <div>
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Kalan Gün</div>
+              <input style={miniInput} value={form.kalan} onChange={e=>setForm({...form, kalan:e.target.value})} onKeyDown={e=>e.key==="Enter"&&kaydet()} placeholder="33" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div>
+            <div className="mono">Anapara</div>
+            <div className="big"><span className="lira">₺</span>{TL(vadeli.tutar)}</div>
+          </div>
+          <div className="ring" style={{"--p": pct}}>
+            <span>%{pct}</span>
+          </div>
+          <div className="blk">
+            <div className="lbl">Faiz Oranı</div>
+            <div className="v"><em>{vadeli.faiz}%</em> yıllık</div>
+          </div>
+          <div className="blk">
+            <div className="lbl">Vade Sonu Kazanç</div>
+            <div className="v" style={{color:"var(--good)"}}>+₺{TL(kazanc)}</div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ----------- Claude AI Chat -----------
+function ClaudeChat({ context }) {
+  const [msgs, setMsgs] = useState([
+    { role: "assistant", text: "Merhaba Atakan. Bugün <em>nasıl yardımcı</em> olabilirim? Finansal durumun, projelerin ya da görevlerin hakkında soru sorabilirsin." }
+  ]);
+  const [txt, setTxt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const endRef = useRef(null);
+
+  useEffect(() => { endRef.current?.scrollTo({ top: 99999, behavior: "smooth" }); }, [msgs, busy]);
+
+  const send = async (override) => {
+    const q = (override ?? txt).trim();
+    if (!q || busy) return;
+    setTxt("");
+    setMsgs(m => [...m, { role: "user", text: q }]);
+    setBusy(true);
+    try {
+      const sys = `Sen Atakan'ın kişisel dashboard'unda çalışan bir AI asistanısın. Türkçe cevap ver. Kısa, net ve dostça konuş — 2-3 cümleyi geçme. Vurgulamak istediğin tek bir kelime varsa <em>kelime</em> olarak işaretle. Atakan'ın güncel durumu: ${context}`;
+      const reply = await window.claude.complete({
+        messages: [
+          { role: "user", content: sys + "\n\nSoru: " + q }
+        ]
+      });
+      setMsgs(m => [...m, { role: "assistant", text: reply }]);
+    } catch (e) {
+      setMsgs(m => [...m, { role: "assistant", text: "Bir hata oluştu, tekrar dener misin?" }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const suggestions = ["Bu ay tasarrufum yeterli mi?", "Hangi göreve odaklanmalıyım?", "Fon dağılımım dengeli mi?"];
+
+  return (
+    <div className="claude">
+      <div className="card-head head">
+        <div>
+          <div className="mono">10 // Claude AI</div>
+          <div className="title">Yapay <em>zekâ</em> asistanı</div>
+        </div>
+        <span className="mono"><span className="live-dot"></span>&nbsp;&nbsp;Hazır</span>
+      </div>
+      <div className="messages" ref={endRef}>
+        {msgs.map((m, i) => (
+          <div className={"msg " + m.role} key={i}>
+            <span className="role">{m.role === "user" ? "Sen" : "Claude"}</span>
+            <div className="body" dangerouslySetInnerHTML={{__html: m.text}}></div>
+          </div>
+        ))}
+        {busy && (
+          <div className="msg assistant">
+            <span className="role">Claude</span>
+            <div className="body"><span className="typing"><span></span><span></span><span></span></span></div>
+          </div>
+        )}
+      </div>
+      {msgs.length === 1 && !busy && (
+        <div className="chips">
+          {suggestions.map(s => (
+            <button key={s} className="chip" onClick={() => send(s)}>{s}</button>
+          ))}
+        </div>
+      )}
+      <div className="composer">
+        <input
+          placeholder="Claude'a sor…"
+          value={txt}
+          onChange={e => setTxt(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && send()}
+          disabled={busy}
+        />
+        <button onClick={() => send()} disabled={busy || !txt.trim()}>Gönder</button>
+      </div>
+    </div>
+  );
+}
+
+// ----------- App -----------
+function App() {
+  const [funds, setFunds]     = useState(INITIAL_FUNDS);
+  const [tick, setTick]       = useState("15:18:02");
+  const [borclar, setBorclar] = useState(BORCLAR_INIT);
+  const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, kalan:0 });
+
+  // simulate live fund price ticks
+  useEffect(() => {
+    const t = setInterval(() => {
+      setFunds(prev => prev.map(f => {
+        const drift = (Math.random() - 0.5) * 0.004;
+        const newPrice = Math.max(0.0001, f.price * (1 + drift));
+        return { ...f, price: newPrice };
+      }));
+      const d = new Date();
+      setTick(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`);
+    }, 2500);
+    return () => clearInterval(t);
+  }, []);
+
+  const totals = useMemo(() => {
+    const fonNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
+    const fonBase = funds.reduce((a,f) => a + f.base  * f.adet, 0);
+    const assets = Math.round(fonNow + vadeli.tutar);
+    const debt = borclar.reduce((a,b) => a + b.amt, 0);
+    return { net: assets - debt, assets, debt, fonChange: fonNow - fonBase };
+  }, [funds, borclar, vadeli]);
+
+  const context = `Toplam varlık ₺${TL(totals.assets)}. Toplam borç ₺${TL(totals.debt)}. Net varlık ₺${TL(totals.net)}. Vadeli mevduat ₺${TL(vadeli.tutar)} (%${vadeli.faiz} yıllık faiz, ${vadeli.kalan} gün kaldı). Fon portföyü ₺${TL(Math.round(funds.reduce((a,f)=>a+f.price*f.adet,0)))}. ${PROJELER_INIT.length} aktif proje.`;
+
+  return (
+    <>
+      <Operator />
+      <Hello />
+      <NetWorth totals={totals} />
+      <Projects />
+      <Todos />
+      <Cash />
+      <Debts borclar={borclar} setBorclar={setBorclar} />
+      <Funds funds={funds} setFunds={setFunds} lastTick={tick} />
+      <div className="deposit">
+        <Vadeli vadeli={vadeli} setVadeli={setVadeli} />
+        <ClaudeChat context={context} />
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
