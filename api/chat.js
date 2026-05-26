@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 300,
       system: `Sen Atakan'ın kişisel dashboard'unda çalışan bir AI asistanısın. Türkçe cevap ver. Kısa, net ve dostça konuş — 2-3 cümleyi geçme. Atakan'ın güncel durumu: ${context}`,
       messages: [{ role: 'user', content: message }],
