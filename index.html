@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kişisel Sayfam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,7 +118,7 @@
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
   }
   .avatar::after {
-    content: ""; position: absolute; inset: 0;
+    content: ""; position: absolute; inset: 0; z-index: 0;
     background:
       radial-gradient(ellipse 38px 30px at 50% 38%, #d3a884 0%, #b48865 55%, transparent 60%),
       radial-gradient(ellipse 60px 40px at 50% 100%, #1a3a5c 30%, #1a3a5c 60%, transparent 65%);
@@ -329,6 +330,79 @@
     padding-top: 8px; border-top: 1px solid var(--line); margin-top: 4px;
   }
   .kripto-total { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ink); }
+
+  /* ========== MOBİL ========== */
+  @media (max-width: 768px) {
+    body { overflow: auto; }
+
+    .app {
+      height: auto;
+      min-height: 100vh;
+      padding: 14px 12px 32px;
+      grid-template-rows: auto auto;
+      gap: 12px;
+    }
+
+    /* topbar: sadece sol kısmı göster */
+    .topbar .right { display: none; }
+    .topbar { font-size: 10px; }
+
+    /* grid: tek kolon, serbest yükseklik */
+    .grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      min-height: unset;
+      height: auto;
+    }
+
+    /* tüm kartların grid yerleşimini sıfırla, sıra ver */
+    .op       { grid-column: 1 !important; grid-row: auto !important; order: 1; }
+    .hello    { grid-column: 1 !important; grid-row: auto !important; order: 2; }
+    .worth    { grid-column: 1 !important; grid-row: auto !important; order: 3; }
+    .projects { grid-column: 1 !important; grid-row: auto !important; order: 4; }
+    .todos    { grid-column: 1 !important; grid-row: auto !important; order: 5; }
+    .cash     { grid-column: 1 !important; grid-row: auto !important; order: 6; }
+    .debts    { grid-column: 1 !important; grid-row: auto !important; order: 7; }
+    .funds    { grid-column: 1 !important; grid-row: auto !important; order: 8; }
+    .deposit  { grid-column: 1 !important; grid-row: auto !important; order: 9; }
+
+    /* kartlar otomatik yükseklik olsun, scroll yok */
+    .card { min-height: unset; overflow: visible; }
+
+    /* 02 // Bugün — yatay grid → dikey flex */
+    .hello {
+      display: flex !important;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px;
+    }
+    .hello h1 { font-size: 24px; }
+    .clock { text-align: left; }
+    .clock .time { font-size: 40px; }
+
+    /* 03 // Net Varlık */
+    .worth .big { font-size: 28px; }
+    .worth .row { flex-wrap: wrap; gap: 10px; }
+
+    /* listeler: mobilde tam uzunluk göster */
+    .proj-list  { max-height: none; overflow: visible; }
+    .todo-list  { max-height: none; overflow: visible; }
+    .debt-list  { max-height: none; overflow: visible; }
+    .fund-list  { max-height: none; overflow: visible; }
+    .kripto-list { max-height: none; overflow: visible; flex: none; }
+
+    /* 09+10 sarıcı: flex kolon yap */
+    .deposit {
+      display: flex !important;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* köşe tikleri mobilde gizle */
+    body::before, body::after,
+    .corners::before, .corners::after { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -458,8 +532,8 @@ function Operator() {
   return (
     <div className="card op" style={{alignItems: editing ? "start" : "center"}}>
       <div className="avatar" onClick={() => fileRef.current.click()} title="Fotoğraf değiştir" style={{cursor:"pointer", position:"relative"}}>
-        {foto && <img src={foto} alt="profil" style={{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", borderRadius:8}} />}
-        <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background: foto ? "rgba(0,0,0,.35)" : "transparent", borderRadius:8, opacity: foto ? 0 : 1, transition:"opacity .2s"}}
+        {foto && <img src={foto} alt="profil" style={{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", borderRadius:8, zIndex:1}} />}
+        <div style={{position:"absolute", inset:0, zIndex:2, display:"flex", alignItems:"center", justifyContent:"center", background: foto ? "rgba(0,0,0,.35)" : "transparent", borderRadius:8, opacity: foto ? 0 : 1, transition:"opacity .2s"}}
           onMouseEnter={e => e.currentTarget.style.opacity=1}
           onMouseLeave={e => e.currentTarget.style.opacity= foto ? 0 : 1}>
           <span style={{fontFamily:"var(--mono)", fontSize:9, color:"#fff", letterSpacing:".08em", textTransform:"uppercase"}}>Değiştir</span>
@@ -1053,13 +1127,16 @@ function Vadeli({ vadeli, setVadeli }) {
     faiz:        String(vadeli.faiz),
     gun:         String(vadeli.gun),
     vade_tarihi: vadeli.vade_tarihi || "",
+    vadesiz:     String(vadeli.vadesiz || 0),
   });
 
   const kaydet = async () => {
-    const t = parseFloat(form.tutar.replace(",",".")), f = parseFloat(form.faiz.replace(",","."));
-    const g = parseInt(form.gun);
+    const t  = parseFloat(form.tutar.replace(",","."));
+    const f  = parseFloat(form.faiz.replace(",","."));
+    const g  = parseInt(form.gun);
+    const vs = parseFloat(String(form.vadesiz).replace(",",".")) || 0;
     if (!t || !f || !g || !form.vade_tarihi) return;
-    const newVadeli = { tutar:t, faiz:f, gun:g, vade_tarihi:form.vade_tarihi };
+    const newVadeli = { tutar:t, faiz:f, gun:g, vade_tarihi:form.vade_tarihi, vadesiz:vs };
     await db.from('settings').upsert({ key:'vadeli', value: newVadeli });
     setVadeli(newVadeli);
     setEditing(false);
@@ -1076,7 +1153,7 @@ function Vadeli({ vadeli, setVadeli }) {
         <span style={{display:"flex", gap:6, alignItems:"center"}}>
           <span className="mono">{kalan} gün kaldı</span>
           <button style={editBtn} onClick={() => {
-            setForm({ tutar:String(vadeli.tutar), faiz:String(vadeli.faiz), gun:String(vadeli.gun), kalan:String(vadeli.kalan) });
+            setForm({ tutar:String(vadeli.tutar), faiz:String(vadeli.faiz), gun:String(vadeli.gun), vade_tarihi:vadeli.vade_tarihi||"", vadesiz:String(vadeli.vadesiz||0) });
             editing ? kaydet() : setEditing(true);
           }}>
             {editing ? "Kaydet" : "Düzenle"}
@@ -1100,14 +1177,18 @@ function Vadeli({ vadeli, setVadeli }) {
             </div>
             <div>
               <div className="mono" style={{fontSize:9, marginBottom:3}}>Vade Tarihi</div>
-              <input type="date" style={miniInput} value={form.vade_tarihi} onChange={e=>setForm({...form, vade_tarihi:e.target.value})} onKeyDown={e=>e.key==="Enter"&&kaydet()} />
+              <input type="date" style={miniInput} value={form.vade_tarihi} onChange={e=>setForm({...form, vade_tarihi:e.target.value})} />
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <div className="mono" style={{fontSize:9, marginBottom:3}}>Vadesiz Mevduat (₺)</div>
+              <input style={miniInput} value={form.vadesiz} onChange={e=>setForm({...form, vadesiz:e.target.value})} placeholder="0" onKeyDown={e=>e.key==="Enter"&&kaydet()} />
             </div>
           </div>
         </div>
       ) : (
         <>
           <div>
-            <div className="mono">Anapara</div>
+            <div className="mono">Vadeli Anapara</div>
             <div className="big"><span className="lira">₺</span>{TL(vadeli.tutar)}</div>
           </div>
           <div className="ring" style={{"--p": pct}}>
@@ -1120,6 +1201,16 @@ function Vadeli({ vadeli, setVadeli }) {
           <div className="blk">
             <div className="lbl">Vade Sonu Kazanç</div>
             <div className="v" style={{color:"var(--good)"}}>+₺{TL(kazanc)}</div>
+          </div>
+          <div className="blk" style={{gridColumn:"1/-1", borderTop:"1px solid var(--line)", paddingTop:8, marginTop:2, display:"flex", justifyContent:"space-between", alignItems:"baseline"}}>
+            <div>
+              <div className="lbl">Vadesiz Mevduat</div>
+              <div className="v">₺{TL(vadeli.vadesiz || 0)}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div className="lbl">Toplam</div>
+              <div className="v" style={{color:"var(--accent)"}}>₺{TL((vadeli.tutar || 0) + (vadeli.vadesiz || 0))}</div>
+            </div>
           </div>
         </>
       )}
@@ -1275,7 +1366,7 @@ function App() {
   const [funds, setFunds]     = useState(INITIAL_FUNDS);
   const [tick, setTick]       = useState("15:18:02");
   const [borclar, setBorclar] = useState(BORCLAR_INIT);
-  const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, vade_tarihi:"" });
+  const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, vade_tarihi:"", vadesiz:0 });
   const [kripto, setKripto]       = useState(INITIAL_KRIPTO);
   const [kriptoTotal, setKriptoTotal] = useState(0);
 
@@ -1318,9 +1409,10 @@ function App() {
     const fetchPrices = async () => {
       try {
         const res = await fetch(`/api/fon?codes=${codes}`);
-        const prices = await res.json();
+        const data = await res.json();
+        const prices = data.prices ?? data; // fon.js { prices, errors } döndürür
         setFunds(prev => prev.map(f =>
-          prices[f.code] ? { ...f, price: prices[f.code] } : f
+          prices[f.code] != null ? { ...f, price: prices[f.code] } : f
         ));
         const d = new Date();
         setTick(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`);
@@ -1334,7 +1426,7 @@ function App() {
   const totals = useMemo(() => {
     const fonNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
     const fonBase = funds.reduce((a,f) => a + f.base  * f.adet, 0);
-    const assets = Math.round(fonNow + vadeli.tutar + kriptoTotal);
+    const assets = Math.round(fonNow + vadeli.tutar + (vadeli.vadesiz || 0) + kriptoTotal);
     const debt = borclar.reduce((a,b) => a + b.amt, 0);
     return { net: assets - debt, assets, debt, fonChange: fonNow - fonBase };
   }, [funds, borclar, vadeli, kriptoTotal]);
