@@ -420,11 +420,12 @@ function Operator() {
       if (p.role)  setRole(p.role);
       if (p.odak)  setOdak(p.odak);
       if (p.durum) setDurum(p.durum);
+      if (p.foto)  setFoto(p.foto);
     });
   }, []);
 
   const kaydet = async () => {
-    await db.from('settings').upsert({ key:'profile', value:{ad, soyad, role, odak, durum} });
+    await db.from('settings').upsert({ key:'profile', value:{ad, soyad, role, odak, durum, foto} });
     setEditing(false);
   };
 
@@ -432,7 +433,25 @@ function Operator() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setFoto(ev.target.result);
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 300;
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        setFoto(compressed);
+        // Fotoğrafı hemen kaydet — "Kaydet" butonuna basmayı bekleme
+        db.from('settings').select('value').eq('key','profile').single().then(({data}) => {
+          const prev = data?.value || {};
+          db.from('settings').upsert({ key:'profile', value:{ ...prev, foto: compressed } });
+        });
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
