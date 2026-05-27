@@ -3,47 +3,46 @@ export default async function handler(req, res) {
   if (!codes) return res.status(400).json({ error: 'codes required' });
 
   const kodlar = codes.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
-
-  const bugun = new Date();
-  const fmt = (d) => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-  const gun3Once = new Date(bugun); gun3Once.setDate(gun3Once.getDate() - 3);
-
   const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
-
-  // TEFAS session cookie al
-  let cookies = '';
-  try {
-    const s = await fetch('https://www.tefas.gov.tr/TarihselVeriler.aspx', { headers: { 'User-Agent': UA } });
-    const raw = s.headers.get('set-cookie') || '';
-    cookies = raw.split(/,(?=[^ ])/).map(c => c.split(';')[0]).join('; ');
-  } catch (_) {}
 
   const prices = {};
   const errors = {};
 
   await Promise.all(kodlar.map(async (kod) => {
     try {
-      const body = `fontip=YAT&fonkod=${kod}&bastarih=${fmt(gun3Once)}&bittarih=${fmt(bugun)}`;
-      const r = await fetch('https://www.tefas.gov.tr/api/DB/BindHistoryInfo', {
-        method: 'POST',
+      const r = await fetch(`https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${kod}`, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Origin': 'https://www.tefas.gov.tr',
-          'Referer': 'https://www.tefas.gov.tr/TarihselVeriler.aspx',
           'User-Agent': UA,
-          'X-Requested-With': 'XMLHttpRequest',
-          ...(cookies ? { Cookie: cookies } : {}),
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'tr-TR,tr;q=0.9',
         },
-        body,
       });
       if (!r.ok) { errors[kod] = `HTTP ${r.status}`; return; }
-      const data = await r.json();
-      if (!data.data || data.data.length === 0) { errors[kod] = 'no_data'; return; }
-      const latest = data.data.sort((a, b) => {
-        const p = (s) => { const [d,m,y] = s.split('.'); return new Date(y, m-1, d); };
-        return p(b.TARIH) - p(a.TARIH);
-      })[0];
-      prices[kod] = parseFloat(latest.FIYAT);
+      const html = await r.text();
+
+      // Birim pay değeri (NAV) çıkar
+      const patterns = [
+        /class="[^"]*price[^"]*"[^>]*>\s*([\d]+[,.][\d]+)/i,
+        /BirimPayDegeri[^>]*>\s*([\d]+[,.][\d]+)/i,
+        /pay de[gğ]eri[^<]{0,80}([\d]+[,.][\d]{2,6})/i,
+        /"fiyat"[^:]*:\s*"?([\d]+[,.][\d]+)"?/i,
+        /\b(\d+,\d{6})\b/,
+      ];
+
+      let found = false;
+      for (const p of patterns) {
+        const m = html.match(p);
+        if (m) {
+          prices[kod] = parseFloat(m[1].replace(',', '.'));
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        // debug: ilk 2000 char döndür
+        errors[kod] = 'not_found | html_preview: ' + html.slice(0, 2000).replace(/\s+/g, ' ');
+      }
     } catch (e) { errors[kod] = e.message; }
   }));
 
