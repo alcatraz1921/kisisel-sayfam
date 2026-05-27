@@ -1122,7 +1122,7 @@ const INITIAL_KRIPTO = [
   { id:'solana',   symbol:'SOL', adet:0 },
 ];
 
-function Kripto({ kripto, setKripto }) {
+function Kripto({ kripto, setKripto, onTotalChange }) {
   const [prices, setPrices]   = useState({});
   const [loading, setLoading] = useState(false);
   const [edit, setEdit]       = useState(false);
@@ -1176,6 +1176,7 @@ function Kripto({ kripto, setKripto }) {
   };
 
   const total = kripto.reduce((s, c) => s + (prices[c.id]?.try || 0) * c.adet, 0);
+  useEffect(() => { onTotalChange?.(total); }, [total]);
 
   return (
     <div className="kripto">
@@ -1256,7 +1257,8 @@ function App() {
   const [tick, setTick]       = useState("15:18:02");
   const [borclar, setBorclar] = useState(BORCLAR_INIT);
   const [vadeli, setVadeli]   = useState({ tutar:0, faiz:0, gun:0, vade_tarihi:"" });
-  const [kripto, setKripto]   = useState(INITIAL_KRIPTO);
+  const [kripto, setKripto]       = useState(INITIAL_KRIPTO);
+  const [kriptoTotal, setKriptoTotal] = useState(0);
 
   // load persisted data on mount
   useEffect(() => {
@@ -1313,10 +1315,10 @@ function App() {
   const totals = useMemo(() => {
     const fonNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
     const fonBase = funds.reduce((a,f) => a + f.base  * f.adet, 0);
-    const assets = Math.round(fonNow + vadeli.tutar);
+    const assets = Math.round(fonNow + vadeli.tutar + kriptoTotal);
     const debt = borclar.reduce((a,b) => a + b.amt, 0);
     return { net: assets - debt, assets, debt, fonChange: fonNow - fonBase };
-  }, [funds, borclar, vadeli]);
+  }, [funds, borclar, vadeli, kriptoTotal]);
 
   return (
     <>
@@ -1330,7 +1332,7 @@ function App() {
       <Funds funds={funds} setFunds={setFunds} lastTick={tick} />
       <div className="deposit">
         <Vadeli vadeli={vadeli} setVadeli={setVadeli} />
-        <Kripto kripto={kripto} setKripto={setKripto} />
+        <Kripto kripto={kripto} setKripto={setKripto} onTotalChange={setKriptoTotal} />
       </div>
     </>
   );
