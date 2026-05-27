@@ -3,48 +3,95 @@ export default async function handler(req, res) {
   if (!codes) return res.status(400).json({ error: 'codes required' });
 
   const kodlar = codes.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
-  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+  // Tarih formatlayıcı: YYYYMMDD
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const g = String(d.getDate()).padStart(2, '0');
+    return `${y}${m}${g}`;
+  };
+  const now = new Date();
+  const bitTarih = fmt(now);
+  // 7 gün geriye git (hafta sonu/tatil günlerini kapsamak için)
+  const basTarih = fmt(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
 
   const prices = {};
   const errors = {};
 
-  await Promise.all(kodlar.map(async (kod) => {
-    try {
-      const r = await fetch(`https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${kod}`, {
-        headers: {
-          'User-Agent': UA,
-          'Accept': 'text/html,application/xhtml+xml',
-          'Accept-Language': 'tr-TR,tr;q=0.9',
-        },
-      });
-      if (!r.ok) { errors[kod] = `HTTP ${r.status}`; return; }
-      const html = await r.text();
+  // Yeni TEFAS sitesi AJAX API header'ları
+  const HEADERS = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8',
+    'Referer': 'https://www.tefas.gov.tr/',
+    'Origin': 'https://www.tefas.gov.tr',
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'X-Requested-With': 'XMLHttpRequest',
+  };
 
-      // Birim pay değeri (NAV) çıkar
-      const patterns = [
-        /class="[^"]*price[^"]*"[^>]*>\s*([\d]+[,.][\d]+)/i,
-        /BirimPayDegeri[^>]*>\s*([\d]+[,.][\d]+)/i,
-        /pay de[gğ]eri[^<]{0,80}([\d]+[,.][\d]{2,6})/i,
-        /"fiyat"[^:]*:\s*"?([\d]+[,.][\d]+)"?/i,
-        /\b(\d+,\d{6})\b/,
-      ];
+  // Fon türleri: en yaygından başla
+  const FUND_TYPES = ['YAT', 'BYF', 'EMK', 'GYF', 'GSYF'];
 
-      let found = false;
-      for (const p of patterns) {
-        const m = html.match(p);
-        if (m) {
-          prices[kod] = parseFloat(m[1].replace(',', '.'));
-          found = true;
-          break;
+  await Promise.all(
+    kodlar.map(async (kod) => {
+      for (const fonTipi of FUND_TYPES) {
+        try {
+          const r = await fetch(
+            'https://www.tefas.gov.tr/api/funds/fonGnlBlgSiraliGetir',
+            {
+              method: 'POST',
+              headers: HEADERS,
+              body: JSON.stringify({
+                fonTipi,
+                fonKodu: kod,
+                basTarih,
+                bitTarih,
+                basSira: 1,
+                bitSira: 10,
+                dil: 'TR',
+              }),
+            }
+          );
+
+          if (!r.ok) continue; // bu türde bulunamadı, sonrakini dene
+
+          const data = await r.json();
+          const list = Array.isArray(data?.resultList) ? data.resultList : [];
+
+          if (list.length === 0) continue;
+
+          // En güncel tarihe göre sırala
+          list.sort((a, b) =>
+            String(b.tarih || '').localeCompare(String(a.tarih || ''))
+          );
+
+          const fiyat = list[0]?.fiyat;
+          if (fiyat != null) {
+            prices[kod] =
+              typeof fiyat === 'string'
+                ? parseFloat(fiyat.replace(',', '.'))
+                : fiyat;
+            return; // Fiyat bulundu, diğer türleri denemeye gerek yok
+          }
+
+          // fiyat alanı yoksa debug bilgisi ekle
+          errors[kod] =
+            'fiyat_alani_yok | anahtarlar: ' +
+            Object.keys(list[0] || {}).join(', ');
+          return;
+        } catch (_) {
+          // Bu tür için hata oluştu, sonrakini dene
         }
       }
 
-      if (!found) {
-        // debug: ilk 2000 char döndür
-        errors[kod] = 'not_found | html_preview: ' + html.slice(0, 2000).replace(/\s+/g, ' ');
+      // Hiçbir türde bulunamadı
+      if (prices[kod] == null && !errors[kod]) {
+        errors[kod] = 'bulunamadi_tum_turler_denendi';
       }
-    } catch (e) { errors[kod] = e.message; }
-  }));
+    })
+  );
 
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ prices, errors });
