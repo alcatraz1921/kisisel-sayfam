@@ -797,37 +797,62 @@ function Todos() {
 }
 
 // ----------- Cash flow (gelir/gider) -----------
-const CASH_DAYS_INIT = [
-  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
-  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
-  { in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },{ in:0,out:0 },
-];
-const GELIR_ADLARI  = ["Maaş","Freelance","Kira Geliri","Temettü","Fatura İadesi","Diğer"];
-const GIDER_ADLARI  = ["Market","Kira","Fatura","Yakıt","Yemek","Sağlık","Eğlence","Giyim","Abonelik","Diğer"];
+const GELIR_ADLARI = ["Maaş","Prim","Freelance","Kira Geliri","Temettü","Fatura İadesi","Diğer"];
+const GIDER_ADLARI = ["Aylık Harcama","Nays Yükleme","Aidat","SGK","Vergi","Sigorta","Market","Kira","Fatura","Yakıt","Yemek","Sağlık","Eğlence","Giyim","Abonelik","Diğer"];
 
 function Cash() {
-  const [entries, setEntries] = useState([]);
-  const [amount, setAmount]   = useState("");
-  const [ad, setAd]           = useState("Maaş");
+  const [entries, setEntries]     = useState([]);
+  const [sabitler, setSabitler]   = useState([]);
+  const [amount, setAmount]       = useState("");
+  const [ad, setAd]               = useState("Maaş");
   const [entryType, setEntryType] = useState("in");
+  const [sabitEdit, setSabitEdit] = useState(false);
+  const [yeniSabit, setYeniSabit] = useState({ type:"in", ad:"Maaş", amt:"" });
 
   useEffect(() => {
     db.from('cash_entries').select('*').order('created_at').then(({data}) => { if (data) setEntries(data); });
+    db.from('settings').select('value').eq('key','cash_sabit').single().then(({data}) => {
+      if (data?.value) setSabitler(data.value);
+    });
   }, []);
 
-  const histGelir = CASH_DAYS_INIT.reduce((a, d) => a + d.in,  0);
-  const histGider = CASH_DAYS_INIT.reduce((a, d) => a + d.out, 0);
-  const manGelir  = entries.filter(e => e.type === "in" ).reduce((a,e) => a + e.amt, 0);
-  const manGider  = entries.filter(e => e.type === "out").reduce((a,e) => a + e.amt, 0);
-  const gelir = histGelir + manGelir;
-  const gider = histGider + manGider;
+  const saveSabitler = async (next) => {
+    setSabitler(next);
+    await db.from('settings').upsert({ key:'cash_sabit', value: next });
+  };
+
+  const addSabit = async () => {
+    const amt = parseFloat(String(yeniSabit.amt).replace(",","."));
+    if (!yeniSabit.ad.trim() || !amt || isNaN(amt)) return;
+    await saveSabitler([...sabitler, { id: Date.now(), type: yeniSabit.type, ad: yeniSabit.ad.trim(), amt }]);
+    setYeniSabit(s => ({ ...s, amt:"" }));
+  };
+
+  const silSabit = (id) => saveSabitler(sabitler.filter(s => s.id !== id));
+
+  const sabitGelir = sabitler.filter(s => s.type==="in" ).reduce((a,s) => a + (parseFloat(s.amt)||0), 0);
+  const sabitGider = sabitler.filter(s => s.type==="out").reduce((a,s) => a + (parseFloat(s.amt)||0), 0);
+  const manGelir   = entries.filter(e => e.type==="in" ).reduce((a,e) => a + (parseFloat(e.amt)||0), 0);
+  const manGider   = entries.filter(e => e.type==="out").reduce((a,e) => a + (parseFloat(e.amt)||0), 0);
+  const gelir = sabitGelir + manGelir;
+  const gider = sabitGider + manGider;
   const net   = gelir - gider;
 
-  const days = CASH_DAYS_INIT.map((d, i) =>
-    i === CASH_DAYS_INIT.length - 1
-      ? { in: d.in + manGelir, out: d.out + manGider }
-      : d
-  );
+  // Ayın tüm günleri için grafik
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    const dayEntries = entries.filter(e => {
+      const d = new Date(e.created_at);
+      return d.getFullYear() === now.getFullYear() &&
+             d.getMonth()    === now.getMonth()    &&
+             d.getDate()     === i + 1;
+    });
+    return {
+      in:  dayEntries.filter(e => e.type==="in" ).reduce((a,e) => a + (parseFloat(e.amt)||0), 0),
+      out: dayEntries.filter(e => e.type==="out").reduce((a,e) => a + (parseFloat(e.amt)||0), 0),
+    };
+  });
   const max = Math.max(...days.map(d => d.in + d.out), 1);
 
   const addEntry = async () => {
@@ -844,37 +869,42 @@ function Cash() {
   };
 
   const adOptions = entryType === "in" ? GELIR_ADLARI : GIDER_ADLARI;
-  const now = new Date();
-  const month = AYLAR[now.getMonth()] + " " + now.getFullYear();
+  const monthLabel = AYLAR[now.getMonth()] + " " + now.getFullYear();
 
   return (
     <div className="card cash">
       <div className="card-head">
         <span className="mono">06 // Bu Ay · Nakit Akış</span>
-        <span className="mono">{month}</span>
+        <span className="mono">{monthLabel}</span>
       </div>
+
       <div className="cash-top">
         <div className="blk">
           <div className="lbl">Gelir</div>
           <div className="v good">₺{TL(gelir)}</div>
+          {sabitGelir > 0 && <div className="sub">Sabit +₺{TL(sabitGelir)}</div>}
         </div>
         <div className="blk">
           <div className="lbl">Gider</div>
           <div className="v bad">₺{TL(gider)}</div>
+          {sabitGider > 0 && <div className="sub">Sabit -₺{TL(sabitGider)}</div>}
         </div>
         <div className="blk" style={{gridColumn:"1/-1", marginTop:4}}>
           <div className="lbl">Net Tasarruf · %{gelir > 0 ? Math.round(net/gelir*100) : 0} oran</div>
           <div className="v" style={{fontSize:20}}>₺{TL(net)}</div>
         </div>
       </div>
+
       <div className="cash-bars">
         {days.map((d,i) => {
           const hIn  = (d.in /max) * 100;
           const hOut = (d.out/max) * 100;
+          const isToday = i + 1 === now.getDate();
+          const future  = i + 1 > now.getDate();
           return (
-            <div className="day" key={i}>
-              <div className="out" style={{height: hOut + "%"}}></div>
-              <div className="in"  style={{height: hIn  + "%"}}></div>
+            <div className="day" key={i} style={{opacity: future ? 0.25 : 1}}>
+              <div className="out" style={{height: hOut + "%", background: isToday ? "var(--accent)" : undefined}}></div>
+              <div className="in"  style={{height: hIn  + "%", background: isToday ? "var(--good)" : undefined}}></div>
             </div>
           );
         })}
@@ -882,17 +912,59 @@ function Cash() {
       <div className="cash-legend">
         <span><span className="swatch" style={{background:"var(--good)"}}></span>Gelir</span>
         <span><span className="swatch" style={{background:"var(--accent)", opacity:.65}}></span>Gider</span>
-        <span style={{marginLeft:"auto"}}>Son {days.length} gün</span>
+        <span style={{marginLeft:"auto"}}>{AYLAR[now.getMonth()]} · {daysInMonth} gün</span>
       </div>
 
+      {/* Sabit gelir / gider */}
+      <div style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)"}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4}}>
+          <span style={{fontFamily:"var(--mono)", fontSize:9, letterSpacing:".1em", textTransform:"uppercase", color:"var(--muted)"}}>
+            Sabit · {sabitler.length} kalem
+          </span>
+          <button style={editBtn} onClick={() => setSabitEdit(e => !e)}>{sabitEdit ? "Tamam" : "Düzenle"}</button>
+        </div>
+        {sabitler.map(s => (
+          <div key={s.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"3px 0", borderTop:"1px solid var(--line)"}}>
+            <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{s.ad}</span>
+            <span style={{display:"flex", alignItems:"center", gap:6}}>
+              <span style={{fontFamily:"var(--mono)", fontSize:11, fontWeight:600, color: s.type==="in" ? "var(--good)" : "var(--bad)"}}>
+                {s.type==="in" ? "+" : "-"}₺{TL(parseFloat(s.amt)||0)}
+              </span>
+              {sabitEdit && (
+                <button onClick={() => silSabit(s.id)} style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", opacity:.6}}>×</button>
+              )}
+            </span>
+          </div>
+        ))}
+        {sabitEdit && (
+          <div style={{display:"flex", gap:4, marginTop:6, paddingTop:6, borderTop:"1px dashed var(--line)", alignItems:"center"}}>
+            <button
+              onClick={() => setYeniSabit(s => ({ ...s, type: s.type==="in" ? "out" : "in", ad: s.type==="in" ? GIDER_ADLARI[0] : GELIR_ADLARI[0] }))}
+              style={{fontFamily:"var(--mono)", fontSize:9, padding:"2px 6px", borderRadius:3, border:"none", cursor:"pointer", whiteSpace:"nowrap",
+                background: yeniSabit.type==="in" ? "var(--good)" : "var(--bad)", color:"#fff"}}>
+              {yeniSabit.type==="in" ? "+ Gelir" : "- Gider"}
+            </button>
+            <select value={yeniSabit.ad} onChange={e => setYeniSabit(s => ({...s, ad: e.target.value}))}
+              style={{flex:1, fontFamily:"var(--mono)", fontSize:9, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"2px 4px", color:"var(--ink-2)"}}>
+              {(yeniSabit.type==="in" ? GELIR_ADLARI : GIDER_ADLARI).map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <input placeholder="₺" value={yeniSabit.amt} onChange={e => setYeniSabit(s => ({...s, amt: e.target.value}))}
+              onKeyDown={e => e.key==="Enter" && addSabit()}
+              style={{...miniInput, width:70, textAlign:"right"}} />
+            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"3px 8px"}} onClick={addSabit}>Ekle</button>
+          </div>
+        )}
+      </div>
+
+      {/* Değişken girişler */}
       {entries.length > 0 && (
-        <div style={{marginTop:8, display:"flex", flexDirection:"column", gap:0, overflow:"auto", maxHeight:80}}>
+        <div style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)", display:"flex", flexDirection:"column", overflow:"auto", maxHeight:80}}>
           {entries.map(e => (
-            <div key={e.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", borderTop:"1px solid var(--line)"}}>
+            <div key={e.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"3px 0", borderTop:"1px solid var(--line)"}}>
               <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{e.ad}</span>
               <span style={{display:"flex", alignItems:"center", gap:6}}>
                 <span style={{fontFamily:"var(--mono)", fontSize:11, fontWeight:600, color: e.type==="in" ? "var(--good)" : "var(--bad)"}}>
-                  {e.type==="in" ? "+" : "-"}₺{TL(e.amt)}
+                  {e.type==="in" ? "+" : "-"}₺{TL(parseFloat(e.amt)||0)}
                 </span>
                 <button onClick={() => sil(e.id)} style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", opacity:.6}}>×</button>
               </span>
@@ -901,6 +973,7 @@ function Cash() {
         </div>
       )}
 
+      {/* Yeni giriş formu */}
       <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
         <div style={{display:"flex", gap:4}}>
           <button onClick={() => { setEntryType("in");  setAd(GELIR_ADLARI[0]); }}
@@ -930,18 +1003,43 @@ function Cash() {
 
 // ----------- Borçlar -----------
 const BORCLAR_INIT = [];
+
+// kalan alanı JSON depolar: { no, toplam, odendi }
+const parseKalan = (kalan) => { try { return JSON.parse(kalan); } catch { return {}; } };
+
 function Debts({ borclar, setBorclar }) {
   const [editing, setEditing] = useState(false);
-  const [yeni, setYeni] = useState({ who:"", bank:"", amt:"", kalan:"" });
+  const [yeni, setYeni] = useState({ who:"", bank:"", amt:"", taksit:"1", baslangicAy:"" });
 
-  const toplam = borclar.reduce((a,b)=>a+b.amt, 0);
+  // Toplam: sadece ödenmemişler
+  const toplam = borclar
+    .filter(b => !parseKalan(b.kalan).odendi)
+    .reduce((a,b) => a + (parseFloat(b.amt) || 0), 0);
 
   const ekle = async () => {
     const amt = parseFloat(yeni.amt.replace(",","."));
+    const taksit = Math.max(1, parseInt(yeni.taksit) || 1);
     if (!yeni.who.trim() || !amt || isNaN(amt)) return;
-    const { data } = await db.from('debts').insert({ who:yeni.who.trim(), bank:yeni.bank.trim(), amt, kalan:yeni.kalan.trim() }).select().single();
-    if (data) setBorclar(prev => [...prev, data]);
-    setYeni({ who:"", bank:"", amt:"", kalan:"" });
+    const rows = Array.from({ length: taksit }, (_, i) => {
+      let ay = "";
+      if (yeni.baslangicAy) {
+        const [y, m] = yeni.baslangicAy.split("-").map(Number);
+        const d = new Date(y, m - 1 + i);
+        ay = AYLAR[d.getMonth()] + " " + d.getFullYear();
+      }
+      return { who: yeni.who.trim(), bank: yeni.bank.trim(), amt,
+        kalan: JSON.stringify({ no: i + 1, toplam: taksit, odendi: false, ay }) };
+    });
+    const { data } = await db.from('debts').insert(rows).select();
+    if (data) setBorclar(prev => [...prev, ...data]);
+    setYeni({ who:"", bank:"", amt:"", taksit:"1", baslangicAy:"" });
+  };
+
+  const toggleOdendi = async (d) => {
+    const k = parseKalan(d.kalan);
+    const newKalan = JSON.stringify({ ...k, odendi: !k.odendi });
+    await db.from('debts').update({ kalan: newKalan }).eq('id', d.id);
+    setBorclar(prev => prev.map(b => b.id === d.id ? { ...b, kalan: newKalan } : b));
   };
 
   const sil = async (id) => {
@@ -960,25 +1058,44 @@ function Debts({ borclar, setBorclar }) {
           </button>
         </span>
       </div>
-      <div className="mono" style={{fontSize:9.5}}>Toplam Borç</div>
+      <div className="mono" style={{fontSize:9.5}}>Toplam Borç (ödenmemiş)</div>
       <div className="total"><span className="lira">₺</span>{TL(toplam)}</div>
       <div className="debt-list">
-        {borclar.map((d) => (
-          <div className="debt" key={d.id}>
-            <div className="who">{d.who}</div>
-            <div style={{display:"flex", alignItems:"center", gap:6}}>
-              <div className="amt">₺{TL(d.amt)}</div>
-              {editing && (
-                <button onClick={() => sil(d.id)} style={{
-                  fontFamily:"var(--mono)", fontSize:11, background:"transparent",
-                  border:"none", cursor:"pointer", color:"var(--bad)", padding:"0 2px", lineHeight:1
-                }}>×</button>
-              )}
+        {borclar.map((d) => {
+          const k = parseKalan(d.kalan);
+          const odendi = k.odendi || false;
+          const taksitLabel = k.toplam > 1
+            ? `${k.no} / ${k.toplam} taksit${k.ay ? " · " + k.ay : ""}`
+            : k.ay || (typeof d.kalan === 'string' && !d.kalan.startsWith('{') ? d.kalan : '—');
+          return (
+            <div className="debt" key={d.id} style={{opacity: odendi ? 0.65 : 1}}>
+              <div className="who" style={{color: odendi ? "var(--good)" : "", textDecoration: odendi ? "line-through" : ""}}>
+                {d.who}
+              </div>
+              <div style={{display:"flex", alignItems:"center", gap:6}}>
+                <div className="amt" style={{color: odendi ? "var(--good)" : ""}}>₺{TL(parseFloat(d.amt)||0)}</div>
+                <button
+                  onClick={() => toggleOdendi(d)}
+                  style={{
+                    fontFamily:"var(--mono)", fontSize:9, letterSpacing:".08em", textTransform:"uppercase",
+                    padding:"2px 6px", borderRadius:3, border:"1px solid var(--line)", cursor:"pointer",
+                    background: odendi ? "var(--good)" : "transparent",
+                    color: odendi ? "#fff" : "var(--muted)",
+                  }}>
+                  {odendi ? "✓ Ödendi" : "Bekliyor"}
+                </button>
+                {editing && (
+                  <button onClick={() => sil(d.id)} style={{
+                    fontFamily:"var(--mono)", fontSize:11, background:"transparent",
+                    border:"none", cursor:"pointer", color:"var(--bad)", padding:"0 2px", lineHeight:1
+                  }}>×</button>
+                )}
+              </div>
+              <div className="meta">{d.bank}</div>
+              <div className="when">{taksitLabel}</div>
             </div>
-            <div className="meta">{d.bank}</div>
-            <div className="when">{d.kalan}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {editing && (
         <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:8, paddingTop:8, borderTop:"1px dashed var(--line)"}}>
@@ -986,9 +1103,16 @@ function Debts({ borclar, setBorclar }) {
             <input style={{...miniInput, flex:2}} placeholder="Borç adı (ör. Kredi Kartı)" value={yeni.who} onChange={e=>setYeni({...yeni, who:e.target.value})} />
             <input style={{...miniInput, flex:1}} placeholder="Banka" value={yeni.bank} onChange={e=>setYeni({...yeni, bank:e.target.value})} />
           </div>
-          <div style={{display:"flex", gap:6, alignItems:"center"}}>
-            <input style={{...miniInput, flex:1}} placeholder="Tutar (₺)" value={yeni.amt} onChange={e=>setYeni({...yeni, amt:e.target.value})} />
-            <input style={{...miniInput, flex:1}} placeholder="Kalan (ör. 12 ay)" value={yeni.kalan} onChange={e=>setYeni({...yeni, kalan:e.target.value})} onKeyDown={e=>e.key==="Enter"&&ekle()} />
+          <div style={{display:"flex", gap:6, alignItems:"center", flexWrap:"wrap"}}>
+            <input style={{...miniInput, flex:1, minWidth:80}} placeholder="Tutar/taksit (₺)" value={yeni.amt} onChange={e=>setYeni({...yeni, amt:e.target.value})} />
+            <div style={{display:"flex", alignItems:"center", gap:4}}>
+              <span style={{fontFamily:"var(--mono)", fontSize:9, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".08em", whiteSpace:"nowrap"}}>Taksit</span>
+              <input style={{...miniInput, width:36, textAlign:"center"}} type="number" min="1" value={yeni.taksit} onChange={e=>setYeni({...yeni, taksit:e.target.value})} />
+            </div>
+            <div style={{display:"flex", alignItems:"center", gap:4}}>
+              <span style={{fontFamily:"var(--mono)", fontSize:9, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".08em", whiteSpace:"nowrap"}}>Başlangıç</span>
+              <input type="month" style={{...miniInput, width:110, fontSize:11}} value={yeni.baslangicAy} onChange={e=>setYeni({...yeni, baslangicAy:e.target.value})} onKeyDown={e=>e.key==="Enter"&&ekle()} />
+            </div>
             <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 8px"}} onClick={ekle}>Ekle</button>
           </div>
         </div>
@@ -1427,7 +1551,7 @@ function App() {
     const fonNow  = funds.reduce((a,f) => a + f.price * f.adet, 0);
     const fonBase = funds.reduce((a,f) => a + f.base  * f.adet, 0);
     const assets = Math.round(fonNow + vadeli.tutar + (vadeli.vadesiz || 0) + kriptoTotal);
-    const debt = borclar.reduce((a,b) => a + b.amt, 0);
+    const debt = borclar.filter(b => !parseKalan(b.kalan).odendi).reduce((a,b) => a + (parseFloat(b.amt) || 0), 0);
     return { net: assets - debt, assets, debt, fonChange: fonNow - fonBase };
   }, [funds, borclar, vadeli, kriptoTotal]);
 
