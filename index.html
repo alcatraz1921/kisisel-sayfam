@@ -216,8 +216,8 @@
 
   /* ========== Finance: Gelir/Gider ========== */
   .cash { grid-column: 3; grid-row: 2; }
-  .cash-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .cash-top .blk .v { font-size: 26px; font-weight: 500; letter-spacing: -.01em; }
+  .cash-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .cash-top .blk .v { font-size: 20px; font-weight: 500; letter-spacing: -.01em; }
   .cash-top .blk .v.bad { color: var(--bad); }
   .cash-top .blk .v.good { color: var(--good); }
   .cash-top .blk .lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
@@ -808,6 +808,11 @@ function Cash() {
   const [entryType, setEntryType] = useState("in");
   const [sabitEdit, setSabitEdit] = useState(false);
   const [yeniSabit, setYeniSabit] = useState({ type:"in", ad:"Maaş", amt:"" });
+  const entriesRef = useRef(null);
+
+  useEffect(() => {
+    if (entriesRef.current) entriesRef.current.scrollTop = entriesRef.current.scrollHeight;
+  }, [entries]);
 
   useEffect(() => {
     db.from('cash_entries').select('*').order('created_at').then(({data}) => { if (data) setEntries(data); });
@@ -872,6 +877,7 @@ function Cash() {
   const monthLabel = AYLAR[now.getMonth()] + " " + now.getFullYear();
 
   return (
+    <>
     <div className="card cash">
       <div className="card-head">
         <span className="mono">06 // Bu Ay · Nakit Akış</span>
@@ -889,9 +895,9 @@ function Cash() {
           <div className="v bad">₺{TL(gider)}</div>
           {sabitGider > 0 && <div className="sub">Sabit -₺{TL(sabitGider)}</div>}
         </div>
-        <div className="blk" style={{gridColumn:"1/-1", marginTop:4}}>
-          <div className="lbl">Net Tasarruf · %{gelir > 0 ? Math.round(net/gelir*100) : 0} oran</div>
-          <div className="v" style={{fontSize:20}}>₺{TL(net)}</div>
+        <div className="blk">
+          <div className="lbl">Net Tasarruf · %{gelir > 0 ? Math.round(net/gelir*100) : 0}</div>
+          <div className="v" style={{color: net >= 0 ? "var(--good)" : "var(--bad)"}}>₺{TL(net)}</div>
         </div>
       </div>
 
@@ -915,50 +921,19 @@ function Cash() {
         <span style={{marginLeft:"auto"}}>{AYLAR[now.getMonth()]} · {daysInMonth} gün</span>
       </div>
 
-      {/* Sabit gelir / gider */}
-      <div style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)"}}>
-        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4}}>
-          <span style={{fontFamily:"var(--mono)", fontSize:9, letterSpacing:".1em", textTransform:"uppercase", color:"var(--muted)"}}>
-            Sabit · {sabitler.length} kalem
-          </span>
-          <button style={editBtn} onClick={() => setSabitEdit(e => !e)}>{sabitEdit ? "Tamam" : "Düzenle"}</button>
-        </div>
-        {sabitler.map(s => (
-          <div key={s.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"3px 0", borderTop:"1px solid var(--line)"}}>
-            <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{s.ad}</span>
-            <span style={{display:"flex", alignItems:"center", gap:6}}>
-              <span style={{fontFamily:"var(--mono)", fontSize:11, fontWeight:600, color: s.type==="in" ? "var(--good)" : "var(--bad)"}}>
-                {s.type==="in" ? "+" : "-"}₺{TL(parseFloat(s.amt)||0)}
-              </span>
-              {sabitEdit && (
-                <button onClick={() => silSabit(s.id)} style={{fontFamily:"var(--mono)", fontSize:11, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", opacity:.6}}>×</button>
-              )}
-            </span>
-          </div>
-        ))}
-        {sabitEdit && (
-          <div style={{display:"flex", gap:4, marginTop:6, paddingTop:6, borderTop:"1px dashed var(--line)", alignItems:"center"}}>
-            <button
-              onClick={() => setYeniSabit(s => ({ ...s, type: s.type==="in" ? "out" : "in", ad: s.type==="in" ? GIDER_ADLARI[0] : GELIR_ADLARI[0] }))}
-              style={{fontFamily:"var(--mono)", fontSize:9, padding:"2px 6px", borderRadius:3, border:"none", cursor:"pointer", whiteSpace:"nowrap",
-                background: yeniSabit.type==="in" ? "var(--good)" : "var(--bad)", color:"#fff"}}>
-              {yeniSabit.type==="in" ? "+ Gelir" : "- Gider"}
-            </button>
-            <select value={yeniSabit.ad} onChange={e => setYeniSabit(s => ({...s, ad: e.target.value}))}
-              style={{flex:1, fontFamily:"var(--mono)", fontSize:9, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"2px 4px", color:"var(--ink-2)"}}>
-              {(yeniSabit.type==="in" ? GELIR_ADLARI : GIDER_ADLARI).map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-            <input placeholder="₺" value={yeniSabit.amt} onChange={e => setYeniSabit(s => ({...s, amt: e.target.value}))}
-              onKeyDown={e => e.key==="Enter" && addSabit()}
-              style={{...miniInput, width:70, textAlign:"right"}} />
-            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"3px 8px"}} onClick={addSabit}>Ekle</button>
-          </div>
-        )}
+      {/* Sabit özet satırı — tıklayınca popup açılır */}
+      <div style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+        <span style={{fontFamily:"var(--mono)", fontSize:9, letterSpacing:".1em", textTransform:"uppercase", color:"var(--muted)"}}>
+          Sabit · {sabitler.length} kalem
+          {sabitGelir > 0 && <span style={{color:"var(--good)", marginLeft:8}}>+₺{TL(sabitGelir)}</span>}
+          {sabitGider > 0 && <span style={{color:"var(--bad)",  marginLeft:6}}>-₺{TL(sabitGider)}</span>}
+        </span>
+        <button style={editBtn} onClick={() => setSabitEdit(true)}>Düzenle</button>
       </div>
 
       {/* Değişken girişler */}
       {entries.length > 0 && (
-        <div style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)", display:"flex", flexDirection:"column", overflow:"auto", maxHeight:80}}>
+        <div ref={entriesRef} style={{marginTop:8, paddingTop:8, borderTop:"1px solid var(--line)", display:"flex", flexDirection:"column", overflow:"auto", maxHeight:120}}>
           {entries.map(e => (
             <div key={e.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"3px 0", borderTop:"1px solid var(--line)"}}>
               <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{e.ad}</span>
@@ -998,6 +973,65 @@ function Cash() {
         </div>
       </div>
     </div>
+
+    {/* Sabit popup */}
+    {sabitEdit && (
+      <div style={{position:"fixed", inset:0, background:"rgba(29,24,18,.55)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center"}}
+        onClick={() => setSabitEdit(false)}>
+        <div style={{background:"var(--card)", borderRadius:14, padding:"18px 20px", width:340, maxWidth:"92vw", maxHeight:"80vh", overflowY:"auto",
+          boxShadow:"0 16px 48px rgba(29,24,18,.22)"}}
+          onClick={e => e.stopPropagation()}>
+
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
+            <span style={{fontFamily:"var(--mono)", fontSize:10, letterSpacing:".1em", textTransform:"uppercase", color:"var(--ink-2)"}}>
+              Sabit Gelir / Gider
+            </span>
+            <button onClick={() => setSabitEdit(false)}
+              style={{fontFamily:"var(--mono)", fontSize:10, background:"transparent", border:"1px solid var(--line)", borderRadius:4, padding:"2px 8px", cursor:"pointer", color:"var(--muted)"}}>
+              ✕
+            </button>
+          </div>
+
+          {sabitler.length === 0 && (
+            <div style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textAlign:"center", padding:"16px 0", fontStyle:"italic"}}>
+              Henüz sabit kalem yok
+            </div>
+          )}
+
+          {sabitler.map(s => (
+            <div key={s.id} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid var(--line)"}}>
+              <span style={{fontFamily:"var(--mono)", fontSize:10, color:"var(--muted)", textTransform:"uppercase", letterSpacing:".06em"}}>{s.ad}</span>
+              <span style={{display:"flex", alignItems:"center", gap:8}}>
+                <span style={{fontFamily:"var(--mono)", fontSize:12, fontWeight:600, color: s.type==="in" ? "var(--good)" : "var(--bad)"}}>
+                  {s.type==="in" ? "+" : "-"}₺{TL(parseFloat(s.amt)||0)}
+                </span>
+                <button onClick={() => silSabit(s.id)}
+                  style={{fontFamily:"var(--mono)", fontSize:13, background:"transparent", border:"none", cursor:"pointer", color:"var(--muted)", padding:"0 2px", lineHeight:1}}>×</button>
+              </span>
+            </div>
+          ))}
+
+          <div style={{display:"flex", gap:6, marginTop:14, paddingTop:14, borderTop:"1px dashed var(--line)", alignItems:"center"}}>
+            <button
+              onClick={() => setYeniSabit(s => ({ ...s, type: s.type==="in" ? "out" : "in", ad: s.type==="in" ? GIDER_ADLARI[0] : GELIR_ADLARI[0] }))}
+              style={{fontFamily:"var(--mono)", fontSize:9, padding:"3px 8px", borderRadius:3, border:"none", cursor:"pointer", whiteSpace:"nowrap",
+                background: yeniSabit.type==="in" ? "var(--good)" : "var(--bad)", color:"#fff"}}>
+              {yeniSabit.type==="in" ? "+ Gelir" : "- Gider"}
+            </button>
+            <select value={yeniSabit.ad} onChange={e => setYeniSabit(s => ({...s, ad: e.target.value}))}
+              style={{flex:1, fontFamily:"var(--mono)", fontSize:9, background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:3, padding:"3px 6px", color:"var(--ink-2)"}}>
+              {(yeniSabit.type==="in" ? GELIR_ADLARI : GIDER_ADLARI).map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <input placeholder="₺" value={yeniSabit.amt}
+              onChange={e => setYeniSabit(s => ({...s, amt: e.target.value}))}
+              onKeyDown={e => e.key==="Enter" && addSabit()}
+              style={{...miniInput, width:72, textAlign:"right"}} />
+            <button style={{...editBtn, background:"var(--ink)", color:"var(--card)", border:"none", padding:"4px 10px"}} onClick={addSabit}>Ekle</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
